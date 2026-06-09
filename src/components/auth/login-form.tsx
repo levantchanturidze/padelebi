@@ -22,7 +22,12 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
         <Input id="email" name="email" type="email" required autoComplete="email" />
       </div>
       <div>
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-sm text-brand-600 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"
@@ -30,6 +35,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
           required
           autoComplete="current-password"
         />
+      </div>
+      <div className="flex items-center gap-2">
+        <input id="remember" name="remember" type="checkbox" className="h-4 w-4 rounded border-border accent-brand-600" />
+        <Label htmlFor="remember" className="cursor-pointer font-normal">Keep me signed in</Label>
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}

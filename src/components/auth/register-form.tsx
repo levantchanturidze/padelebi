@@ -39,6 +39,17 @@ export function RegisterForm() {
         />
       </div>
       <div>
+        <Label htmlFor="confirm">Confirm password</Label>
+        <Input
+          id="confirm"
+          name="confirm"
+          type="password"
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+      </div>
+      <div>
         <Label htmlFor="role">I want to…</Label>
         <Select id="role" name="role" defaultValue="PLAYER">
           <option value="PLAYER">Book courts as a player</option>

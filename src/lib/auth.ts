@@ -8,6 +8,7 @@ import { prisma } from "./prisma";
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  remember: z.string().optional(),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -36,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           role: user.role,
+          remember: parsed.data.remember === "on",
         };
       },
     }),

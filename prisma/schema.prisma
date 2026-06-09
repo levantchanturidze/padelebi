@@ -25,9 +25,10 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  clubs    Club[]    @relation("ClubOwner")
-  bookings Booking[]
-  reviews  Review[]
+  clubs       Club[]               @relation("ClubOwner")
+  bookings    Booking[]
+  reviews     Review[]
+  resetTokens PasswordResetToken[]
 }
 
 model Club {
@@ -117,6 +118,16 @@ model Blackout {
   court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
   @@index([courtId, startTime])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Review {

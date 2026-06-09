@@ -14,8 +14,10 @@ export const authConfig = {
     jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
-        // role is attached by the credentials authorize() return value
         token.role = (user as { role?: string }).role ?? "PLAYER";
+        const remember = (user as { remember?: boolean }).remember ?? false;
+        // 1 day unless "keep me signed in" is checked, then 30 days
+        token.exp = Math.floor(Date.now() / 1000) + (remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60);
       }
       return token;
     },

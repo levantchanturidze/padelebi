@@ -21,10 +21,6 @@ export default async function LoginPage({
         </CardHeader>
         <CardContent>
           <LoginForm callbackUrl={callbackUrl} />
-          <div className="mt-6 rounded-[var(--radius-md)] bg-background p-3 text-xs text-muted">
-            <p className="font-medium text-foreground">Demo logins (password: password123)</p>
-            <p>player@padelebi.ge · club@padelebi.ge · admin@padelebi.ge</p>
-          </div>
         </CardContent>
       </Card>
     </Container>
