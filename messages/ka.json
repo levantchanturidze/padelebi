@@ -48,6 +48,9 @@
     "anySurface": "ნებისმიერი საფარი",
     "maxPrice": "მაქს. ფასი (GEL/სთ)",
     "maxPricePlaceholder": "მაგ. 80",
+    "date": "თარიღი",
+    "time": "დრო",
+    "anyTime": "ნებისმიერი დრო",
     "amenities": "სერვისები",
     "noResults": "კლუბები ვერ მოიძებნა. სცადე ფილტრების გასუფთავება.",
     "surfaceLabels": {

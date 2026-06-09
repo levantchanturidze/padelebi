@@ -9,19 +9,67 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity } from "@/lib/city-map";
-import { SURFACES, AMENITIES, type Amenity, type Surface } from "@/lib/enums";
+import { SURFACES, AMENITIES } from "@/lib/enums";
+
+const TIME_OPTIONS = Array.from({ length: 18 }, (_, i) => {
+  const h = i + 6;
+  return `${String(h).padStart(2, "0")}:00`;
+});
+
+function dateAtMinutes(base: Date, minutes: number): Date {
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 0, 0, 0, 0);
+  d.setMinutes(minutes);
+  return d;
+}
+
+function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart < bEnd && aEnd > bStart;
+}
 
 export default async function ClubsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string; indoor?: string; surface?: string; maxPrice?: string; amenities?: string }>;
+  searchParams: Promise<{
+    city?: string;
+    indoor?: string;
+    surface?: string;
+    maxPrice?: string;
+    amenities?: string | string[];
+    date?: string;
+    time?: string;
+  }>;
 }) {
-  const { city, indoor, surface, maxPrice, amenities } = await searchParams;
+  const { city, indoor, surface, maxPrice, amenities, date, time } = await searchParams;
   const t = await getTranslations("clubs");
 
   const cityQuery = city ? normalizeCity(city) : undefined;
-  const selectedAmenities = amenities ? amenities.split(",").filter(Boolean) : [];
+  const selectedAmenities = !amenities
+    ? []
+    : Array.isArray(amenities)
+      ? amenities.filter(Boolean)
+      : amenities.split(",").filter(Boolean);
   const maxPriceNum = maxPrice ? parseInt(maxPrice, 10) : undefined;
+
+  const dateQuery = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
+  const timeQuery = time && /^\d{2}:\d{2}$/.test(time) ? time : undefined;
+
+  let dayStart: Date | undefined;
+  let dayEnd: Date | undefined;
+  let weekday: number | undefined;
+  let timeMinutes: number | undefined;
+
+  if (dateQuery) {
+    const [y, m, d] = dateQuery.split("-").map(Number);
+    dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+    dayEnd = new Date(y, m - 1, d + 1, 0, 0, 0, 0);
+    weekday = dayStart.getDay();
+  }
+  if (timeQuery) {
+    const [h, m] = timeQuery.split(":").map(Number);
+    timeMinutes = h * 60 + m;
+  }
+
+  const needsAvailability = weekday !== undefined && timeMinutes !== undefined && dayStart && dayEnd;
 
   const clubs = await prisma.club.findMany({
     where: {
@@ -29,7 +77,20 @@ export default async function ClubsPage({
       ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
       ...(surface ? { courts: { some: { surface, isActive: true } } } : {}),
     },
-    include: { courts: { where: { isActive: true } } },
+    include: {
+      courts: {
+        where: { isActive: true },
+        include: {
+          schedules: true,
+          bookings: needsAvailability
+            ? { where: { status: { not: "CANCELLED" }, startTime: { gte: dayStart }, endTime: { lte: dayEnd! } } }
+            : { take: 0 },
+          blackouts: needsAvailability
+            ? { where: { startTime: { lt: dayEnd! }, endTime: { gt: dayStart! } } }
+            : { take: 0 },
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 
@@ -47,10 +108,40 @@ export default async function ClubsPage({
       if (!selectedAmenities.every((a) => clubAmenities.includes(a))) return false;
     }
 
+    if (weekday !== undefined) {
+      if (needsAvailability && dayStart) {
+        // Show only clubs with at least one court that has a free slot at the chosen date+time
+        const hasSlot = club.courts.some((court) => {
+          const schedule = court.schedules.find((s) => s.dayOfWeek === weekday);
+          if (!schedule) return false;
+          if (timeMinutes! < schedule.openMinutes) return false;
+          if (timeMinutes! + schedule.slotMinutes > schedule.closeMinutes) return false;
+
+          const slotStart = dateAtMinutes(dayStart!, timeMinutes!);
+          const slotEnd = new Date(slotStart.getTime() + schedule.slotMinutes * 60_000);
+
+          if (court.bookings.some((b) => overlaps(slotStart, slotEnd, b.startTime, b.endTime))) return false;
+          if (court.blackouts.some((bl) => overlaps(slotStart, slotEnd, bl.startTime, bl.endTime))) return false;
+          return true;
+        });
+        if (!hasSlot) return false;
+      } else {
+        // Date selected but no time — show clubs open on that weekday
+        if (!club.courts.some((c) => c.schedules.some((s) => s.dayOfWeek === weekday))) return false;
+      }
+    }
+
     return true;
   });
 
-  const hasFilters = city || indoor || surface || maxPrice || amenities;
+  const today = new Date();
+  const todayStr = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0"),
+  ].join("-");
+
+  const hasFilters = city || indoor || surface || maxPrice || amenities || date || time;
 
   return (
     <Container className="py-10">
@@ -58,7 +149,7 @@ export default async function ClubsPage({
       <p className="mt-1 text-muted">{t("clubsAvailable", { count: filtered.length })}</p>
 
       <form className="mt-6 space-y-4" action="/clubs">
-        {/* Row 1: city, court type, surface, max price */}
+        {/* Row 1: city, court type, surface, max price, submit */}
         <div className="flex flex-wrap items-end gap-3">
           <div className="w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("city")}</label>
@@ -93,7 +184,24 @@ export default async function ClubsPage({
           </div>
         </div>
 
-        {/* Row 2: amenities */}
+        {/* Row 2: date + time availability */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="w-44">
+            <label className="mb-1.5 block text-sm font-medium">{t("date")}</label>
+            <Input name="date" type="date" min={todayStr} defaultValue={dateQuery ?? ""} />
+          </div>
+          <div className="w-44">
+            <label className="mb-1.5 block text-sm font-medium">{t("time")}</label>
+            <Select name="time" defaultValue={timeQuery ?? ""}>
+              <option value="">{t("anyTime")}</option>
+              {TIME_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        {/* Row 3: amenities */}
         <div>
           <p className="mb-2 text-sm font-medium">{t("amenities")}</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">

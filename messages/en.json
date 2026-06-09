@@ -48,6 +48,9 @@
     "anySurface": "Any surface",
     "maxPrice": "Max price (GEL/hr)",
     "maxPricePlaceholder": "e.g. 80",
+    "date": "Date",
+    "time": "Time",
+    "anyTime": "Any time",
     "amenities": "Amenities",
     "noResults": "No clubs match your search. Try clearing filters.",
     "surfaceLabels": {
