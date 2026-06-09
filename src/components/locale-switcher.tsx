@@ -15,10 +15,11 @@ export function LocaleSwitcher({ current }: { current: string }) {
     <button
       onClick={toggle}
       disabled={pending}
-      className="rounded-md px-2 py-1 text-sm font-medium text-muted hover:text-foreground transition-colors"
+      className="rounded-md px-1 py-1 text-xl leading-none transition-opacity hover:opacity-70 disabled:opacity-40"
       aria-label="Switch language"
+      title={current === "en" ? "ქართული" : "English"}
     >
-      {current === "en" ? "ქართული" : "English"}
+      {current === "en" ? "🇬🇪" : "🇬🇧"}
     </button>
   );
 }
