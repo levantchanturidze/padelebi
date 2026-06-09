@@ -1,16 +1,15 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { registerAction, type AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 
 export function RegisterForm() {
-  const [state, action, pending] = useActionState<AuthState, FormData>(
-    registerAction,
-    undefined,
-  );
+  const t = useTranslations("auth");
+  const [state, action, pending] = useActionState<AuthState, FormData>(registerAction, undefined);
 
   return (
     <form action={action} className="space-y-4">
@@ -20,49 +19,35 @@ export function RegisterForm() {
         </p>
       )}
       <div>
-        <Label htmlFor="name">Full name</Label>
+        <Label htmlFor="name">{t("fullName")}</Label>
         <Input id="name" name="name" required autoComplete="name" />
       </div>
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input id="email" name="email" type="email" required autoComplete="email" />
       </div>
       <div>
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
+        <Label htmlFor="password">{t("password")}</Label>
+        <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
       </div>
       <div>
-        <Label htmlFor="confirm">Confirm password</Label>
-        <Input
-          id="confirm"
-          name="confirm"
-          type="password"
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
+        <Label htmlFor="confirm">{t("confirmPassword")}</Label>
+        <Input id="confirm" name="confirm" type="password" required minLength={8} autoComplete="new-password" />
       </div>
       <div>
-        <Label htmlFor="role">I want to…</Label>
+        <Label htmlFor="role">{t("iWantTo")}</Label>
         <Select id="role" name="role" defaultValue="PLAYER">
-          <option value="PLAYER">Book courts as a player</option>
-          <option value="CLUB_ADMIN">List and manage my club</option>
+          <option value="PLAYER">{t("bookAsPlayer")}</option>
+          <option value="CLUB_ADMIN">{t("listMyClub")}</option>
         </Select>
       </div>
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Creating account…" : "Create account"}
+        {pending ? t("creatingAccount") : t("createAccountBtn")}
       </Button>
       <p className="text-center text-sm text-muted">
-        Already have an account?{" "}
+        {t("alreadyHaveAccount")}{" "}
         <Link href="/login" className="font-medium text-brand-600 hover:underline">
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </form>

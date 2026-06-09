@@ -1,25 +1,24 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Logo } from "./logo";
 import { Container } from "./ui/container";
 import { LinkButton } from "./ui/button";
+import { LocaleSwitcher } from "./locale-switcher";
 import { logoutAction } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/session";
 
-function dashboardLink(role: string): { href: string; label: string } | null {
+function dashboardLink(role: string, t: (k: string) => string): { href: string; label: string } | null {
   switch (role) {
-    case "PLATFORM_ADMIN":
-      return { href: "/admin", label: "Admin" };
-    case "CLUB_ADMIN":
-      return { href: "/club", label: "Club dashboard" };
-    case "PLAYER":
-      return { href: "/account/bookings", label: "My bookings" };
-    default:
-      return null;
+    case "PLATFORM_ADMIN": return { href: "/admin", label: t("admin") };
+    case "CLUB_ADMIN": return { href: "/club", label: t("clubDashboard") };
+    case "PLAYER": return { href: "/account/bookings", label: t("myBookings") };
+    default: return null;
   }
 }
 
-export function SiteHeader({ user }: { user: SessionUser | null }) {
-  const dash = user ? dashboardLink(user.role) : null;
+export async function SiteHeader({ user, locale }: { user: SessionUser | null; locale: string }) {
+  const t = await getTranslations("nav");
+  const dash = user ? dashboardLink(user.role, t) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
@@ -27,46 +26,32 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         <div className="flex items-center gap-8">
           <Logo />
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
-            <Link href="/clubs" className="hover:text-foreground">
-              Find courts
-            </Link>
-            <Link href="/#how-it-works" className="hover:text-foreground">
-              How it works
-            </Link>
+            <Link href="/clubs" className="hover:text-foreground">{t("findCourts")}</Link>
+            <Link href="/#how-it-works" className="hover:text-foreground">{t("howItWorks")}</Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
+          <LocaleSwitcher current={locale} />
           {user ? (
             <>
               {dash && (
-                <Link
-                  href={dash.href}
-                  className="hidden text-sm font-medium text-foreground hover:text-brand-600 sm:inline"
-                >
+                <Link href={dash.href} className="hidden text-sm font-medium text-foreground hover:text-brand-600 sm:inline">
                   {dash.label}
                 </Link>
               )}
               <form action={logoutAction}>
-                <button
-                  type="submit"
-                  className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted hover:text-foreground"
-                >
-                  Sign out
+                <button type="submit" className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted hover:text-foreground">
+                  {t("signOut")}
                 </button>
               </form>
             </>
           ) : (
             <>
-              <Link
-                href="/login"
-                className="px-3 py-2 text-sm font-medium text-foreground hover:text-brand-600"
-              >
-                Sign in
+              <Link href="/login" className="px-3 py-2 text-sm font-medium text-foreground hover:text-brand-600">
+                {t("signIn")}
               </Link>
-              <LinkButton href="/register" size="sm">
-                Sign up
-              </LinkButton>
+              <LinkButton href="/register" size="sm">{t("signUp")}</LinkButton>
             </>
           )}
         </div>

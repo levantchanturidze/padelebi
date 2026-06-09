@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { LoginForm } from "@/components/auth/login-form";
@@ -11,13 +12,14 @@ export default async function LoginPage({
 }) {
   if (await getCurrentUser()) redirect("/");
   const { callbackUrl } = await searchParams;
+  const t = await getTranslations("auth");
 
   return (
     <Container className="flex justify-center py-16">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Welcome back</CardTitle>
-          <p className="mt-1 text-sm text-muted">Sign in to book courts and manage your bookings.</p>
+          <CardTitle>{t("welcomeBack")}</CardTitle>
+          <p className="mt-1 text-sm text-muted">{t("signInDesc")}</p>
         </CardHeader>
         <CardContent>
           <LoginForm callbackUrl={callbackUrl} />

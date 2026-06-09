@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -17,16 +19,23 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const user = await getCurrentUser();
+  const [user, locale, messages] = await Promise.all([
+    getCurrentUser(),
+    getLocale(),
+    getMessages(),
+  ]);
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SiteHeader user={user} />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        <NextIntlClientProvider messages={messages}>
+          <SiteHeader user={user} locale={locale} />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </NextIntlClientProvider>
       </body>
     </html>
   );

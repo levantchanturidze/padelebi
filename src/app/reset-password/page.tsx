@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, use } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { use } from "react";
 import { resetPasswordAction, type ResetState } from "@/app/actions/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
@@ -14,21 +14,19 @@ export default function ResetPasswordPage({
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
+  const t = useTranslations("auth");
   const { token } = use(searchParams);
-  const [state, action, pending] = useActionState<ResetState, FormData>(
-    resetPasswordAction,
-    undefined,
-  );
+  const [state, action, pending] = useActionState<ResetState, FormData>(resetPasswordAction, undefined);
 
   if (!token) {
     return (
       <Container className="flex justify-center py-16">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
-            <p className="text-center text-sm text-danger">Invalid reset link.</p>
+            <p className="text-center text-sm text-danger">{t("invalidResetLink")}</p>
             <p className="mt-2 text-center text-sm text-muted">
               <Link href="/forgot-password" className="font-medium text-brand-600 hover:underline">
-                Request a new one
+                {t("requestNewOne")}
               </Link>
             </p>
           </CardContent>
@@ -41,7 +39,7 @@ export default function ResetPasswordPage({
     <Container className="flex justify-center py-16">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Choose a new password</CardTitle>
+          <CardTitle>{t("chooseNewPassword")}</CardTitle>
         </CardHeader>
         <CardContent>
           {state?.success ? (
@@ -51,7 +49,7 @@ export default function ResetPasswordPage({
               </p>
               <p className="text-center text-sm text-muted">
                 <Link href="/login" className="font-medium text-brand-600 hover:underline">
-                  Sign in
+                  {t("signIn")}
                 </Link>
               </p>
             </div>
@@ -64,15 +62,15 @@ export default function ResetPasswordPage({
                 </p>
               )}
               <div>
-                <Label htmlFor="password">New password</Label>
+                <Label htmlFor="password">{t("newPassword")}</Label>
                 <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
               </div>
               <div>
-                <Label htmlFor="confirm">Confirm new password</Label>
+                <Label htmlFor="confirm">{t("confirmNewPassword")}</Label>
                 <Input id="confirm" name="confirm" type="password" required minLength={8} autoComplete="new-password" />
               </div>
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? "Saving…" : "Reset password"}
+                {pending ? t("sending") : t("resetPasswordBtn")}
               </Button>
             </form>
           )}

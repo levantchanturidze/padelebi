@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { forgotPasswordAction, type ResetState } from "@/app/actions/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,19 +10,15 @@ import { Input, Label } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function ForgotPasswordPage() {
-  const [state, action, pending] = useActionState<ResetState, FormData>(
-    forgotPasswordAction,
-    undefined,
-  );
+  const t = useTranslations("auth");
+  const [state, action, pending] = useActionState<ResetState, FormData>(forgotPasswordAction, undefined);
 
   return (
     <Container className="flex justify-center py-16">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Reset your password</CardTitle>
-          <p className="mt-1 text-sm text-muted">
-            Enter your email and we'll send you a reset link.
-          </p>
+          <CardTitle>{t("resetPassword")}</CardTitle>
+          <p className="mt-1 text-sm text-muted">{t("resetDesc")}</p>
         </CardHeader>
         <CardContent>
           {state?.success ? (
@@ -31,7 +28,7 @@ export default function ForgotPasswordPage() {
               </p>
               <p className="text-center text-sm text-muted">
                 <Link href="/login" className="font-medium text-brand-600 hover:underline">
-                  Back to sign in
+                  {t("backToSignIn")}
                 </Link>
               </p>
             </div>
@@ -43,15 +40,15 @@ export default function ForgotPasswordPage() {
                 </p>
               )}
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("email")}</Label>
                 <Input id="email" name="email" type="email" required autoComplete="email" />
               </div>
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? "Sending…" : "Send reset link"}
+                {pending ? t("sending") : t("sendResetLink")}
               </Button>
               <p className="text-center text-sm text-muted">
                 <Link href="/login" className="font-medium text-brand-600 hover:underline">
-                  Back to sign in
+                  {t("backToSignIn")}
                 </Link>
               </p>
             </form>
