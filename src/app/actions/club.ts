@@ -17,7 +17,7 @@ const clubSchema = z.object({
   name: z.string().min(2),
   description: z.string().max(2000).optional().or(z.literal("")),
   address: z.string().min(2),
-  city: z.string().min(2),
+  city: z.string().min(2).transform((c) => c.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())),
 });
 
 export async function createClubAction(formData: FormData) {
