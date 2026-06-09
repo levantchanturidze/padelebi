@@ -1,0 +1,134 @@
+// Padelebi — data model
+// NOTE: provider is "sqlite" for local development. For production (Render Postgres),
+// change provider to "postgresql" and set DATABASE_URL accordingly, then run a migration.
+// The schema is written portably: enum-like fields are Strings (validated in app code
+// via src/lib/enums.ts + zod) and list/object fields are JSON-encoded Strings, so the
+// same schema works on both SQLite and Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("PLAYER") // PLAYER | CLUB_ADMIN | PLATFORM_ADMIN
+  phone        String?
+  skillLevel   String? // BEGINNER | INTERMEDIATE | ADVANCED | PRO
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  clubs    Club[]    @relation("ClubOwner")
+  bookings Booking[]
+  reviews  Review[]
+}
+
+model Club {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String   @default("")
+  address      String
+  city         String
+  lat          Float?
+  lng          Float?
+  photos       String   @default("[]") // JSON string[] of image URLs
+  amenities    String   @default("[]") // JSON string[] of amenity keys
+  openingHours String   @default("{}") // JSON: { "0": {open, close}, ... } by weekday
+  status       String   @default("PENDING") // PENDING | APPROVED | SUSPENDED
+  ownerId      String
+  createdAt    DateTime @default(now())
+
+  owner   User     @relation("ClubOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  courts  Court[]
+  reviews Review[]
+
+  @@index([city])
+  @@index([status])
+}
+
+model Court {
+  id             String   @id @default(cuid())
+  clubId         String
+  name           String
+  surface        String   @default("ARTIFICIAL_GRASS") // ARTIFICIAL_GRASS | CONCRETE | PANORAMIC
+  isIndoor       Boolean  @default(false)
+  pricePerHourGEL Int     @default(40)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  club      Club            @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  schedules CourtSchedule[]
+  bookings  Booking[]
+  blackouts Blackout[]
+
+  @@index([clubId])
+}
+
+// Weekly availability template per court used to generate bookable slots.
+model CourtSchedule {
+  id           String @id @default(cuid())
+  courtId      String
+  dayOfWeek    Int // 0 = Sunday ... 6 = Saturday
+  openMinutes  Int // minutes from midnight, e.g. 480 = 08:00
+  closeMinutes Int // e.g. 1320 = 22:00
+  slotMinutes  Int @default(60)
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@unique([courtId, dayOfWeek])
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  courtId       String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime
+  priceGEL      Int
+  status        String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
+  paymentStatus String   @default("UNPAID") // UNPAID | PAID | REFUNDED
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courtId, startTime])
+  @@index([userId])
+}
+
+// Time ranges blocked from booking (maintenance, private events).
+model Blackout {
+  id        String   @id @default(cuid())
+  courtId   String
+  startTime DateTime
+  endTime   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@index([courtId, startTime])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  clubId    String
+  userId    String
+  rating    Int // 1..5
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+}

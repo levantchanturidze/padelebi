@@ -1,0 +1,100 @@
+import { format } from "date-fns";
+import { DashboardShell } from "@/components/dashboard-shell";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
+import { cancelBookingAction } from "@/app/actions/booking";
+import { formatGEL } from "@/lib/utils";
+
+const CLUB_NAV = [
+  { href: "/club", label: "Overview" },
+  { href: "/club/bookings", label: "Bookings" },
+];
+
+const tone = { CONFIRMED: "success", PENDING: "warning", CANCELLED: "danger" } as const;
+
+export default async function ClubBookingsPage() {
+  const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/club/bookings");
+
+  const clubs = await prisma.club.findMany({
+    where: user.role === "PLATFORM_ADMIN" ? {} : { ownerId: user.id },
+    select: { id: true },
+  });
+  const clubIds = clubs.map((c) => c.id);
+
+  const bookings = await prisma.booking.findMany({
+    where: { court: { clubId: { in: clubIds } } },
+    include: { court: { include: { club: true } }, user: true },
+    orderBy: { startTime: "desc" },
+    take: 200,
+  });
+
+  const now = new Date();
+
+  return (
+    <DashboardShell
+      title="Bookings"
+      subtitle="All reservations across your clubs."
+      nav={CLUB_NAV}
+      current="/club/bookings"
+    >
+      <Card>
+        <CardContent>
+          {bookings.length === 0 ? (
+            <p className="text-sm text-muted">No bookings yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted">
+                    <th className="py-2 pr-4 font-medium">When</th>
+                    <th className="py-2 pr-4 font-medium">Club / Court</th>
+                    <th className="py-2 pr-4 font-medium">Player</th>
+                    <th className="py-2 pr-4 font-medium">Price</th>
+                    <th className="py-2 pr-4 font-medium">Status</th>
+                    <th className="py-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id} className="border-b border-border last:border-0">
+                      <td className="py-2 pr-4">
+                        {format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {b.court.club.name} / {b.court.name}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {b.user.name}
+                        {b.user.phone ? <span className="text-muted"> · {b.user.phone}</span> : null}
+                      </td>
+                      <td className="py-2 pr-4">{formatGEL(b.priceGEL)}</td>
+                      <td className="py-2 pr-4">
+                        <Badge tone={tone[b.status as keyof typeof tone] ?? "neutral"}>
+                          {b.status.toLowerCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-2">
+                        {b.status !== "CANCELLED" && b.endTime >= now && (
+                          <form action={cancelBookingAction}>
+                            <input type="hidden" name="bookingId" value={b.id} />
+                            <input type="hidden" name="redirectTo" value="/club/bookings" />
+                            <Button type="submit" variant="outline" size="sm">
+                              Cancel
+                            </Button>
+                          </form>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </DashboardShell>
+  );
+}
