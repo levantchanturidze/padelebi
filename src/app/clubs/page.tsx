@@ -105,10 +105,6 @@ export default async function ClubsPage({
                   value={a}
                   defaultChecked={selectedAmenities.includes(a)}
                   className="h-4 w-4 accent-[var(--color-brand-500)]"
-                  onChange={(e) => {
-                    // handled by form submission
-                    void e;
-                  }}
                 />
                 {t(`amenityLabels.${a}` as never)}
               </label>
