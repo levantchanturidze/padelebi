@@ -46,9 +46,9 @@ export default async function HomePage() {
                   className="h-12 w-full rounded-[var(--radius-md)] border border-transparent bg-white pl-9 pr-3 text-foreground placeholder:text-muted focus-ring"
                 />
               </div>
-              <LinkButton href="/clubs" size="lg" className="bg-accent text-brand-900 hover:bg-accent/90">
+              <button type="submit" className="h-12 rounded-[var(--radius-md)] bg-accent px-5 text-sm font-semibold text-brand-900 hover:bg-accent/90 transition-colors">
                 {t("search")}
-              </LinkButton>
+              </button>
             </form>
           </div>
         </Container>
