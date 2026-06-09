@@ -151,6 +151,15 @@
     "reinstate": "Reinstate",
     "view": "View"
   },
+  "photos": {
+    "clubPhotos": "Club photos",
+    "courtPhotos": "Court photos",
+    "addPhotos": "＋ Add photos",
+    "uploading": "Uploading…",
+    "saving": "Saving…",
+    "remove": "Remove",
+    "uploadError": "Upload failed"
+  },
   "club": {
     "title": "Club dashboard",
     "desc": "Manage your clubs, courts and bookings.",

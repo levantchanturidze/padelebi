@@ -63,6 +63,7 @@ model Court {
   isIndoor       Boolean  @default(false)
   pricePerHourGEL Int     @default(40)
   isActive       Boolean  @default(true)
+  photos         String   @default("[]") // JSON string[] of image URLs
   createdAt      DateTime @default(now())
 
   club      Club            @relation(fields: [clubId], references: [id], onDelete: Cascade)

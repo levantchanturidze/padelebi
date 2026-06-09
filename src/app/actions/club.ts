@@ -62,6 +62,29 @@ export async function updateClubAction(formData: FormData) {
   redirect(`/club/${clubId}?saved=1`);
 }
 
+/* ----------------------------- Photos ----------------------------- */
+
+export async function updateClubPhotosAction(formData: FormData) {
+  const user = await requireRole([...CLUB_ROLES], "/club");
+  const clubId = String(formData.get("clubId"));
+  if (!(await getOwnedClub(clubId, user))) redirect("/club");
+
+  const photos = JSON.parse(String(formData.get("photos") ?? "[]")) as string[];
+  await prisma.club.update({ where: { id: clubId }, data: { photos: JSON.stringify(photos) } });
+  revalidatePath(`/club/${clubId}`);
+}
+
+export async function updateCourtPhotosAction(formData: FormData) {
+  const user = await requireRole([...CLUB_ROLES], "/club");
+  const courtId = String(formData.get("courtId"));
+  const court = await prisma.court.findUnique({ where: { id: courtId } });
+  if (!court || !(await getOwnedClub(court.clubId, user))) redirect("/club");
+
+  const photos = JSON.parse(String(formData.get("photos") ?? "[]")) as string[];
+  await prisma.court.update({ where: { id: courtId }, data: { photos: JSON.stringify(photos) } });
+  revalidatePath(`/club/${court.clubId}`);
+}
+
 /* ----------------------------- Courts ----------------------------- */
 
 const courtSchema = z.object({

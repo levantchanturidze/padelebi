@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { getTranslations } from "next-intl/server";
+import { PhotoUploader } from "@/components/photo-uploader";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,12 +58,15 @@ export default async function ClubManagePage({
   ]);
   if (!club) notFound();
 
+  const tp = await getTranslations("photos");
+
   const CLUB_NAV = [
     { href: "/club", label: t("overview") },
     { href: "/club/bookings", label: t("bookings") },
   ];
 
   const amenities = parseJSON<Amenity[]>(club.amenities, []);
+  const clubPhotos = parseJSON<string[]>(club.photos, []);
   const nowLocal = format(new Date(), "yyyy-MM-dd'T'HH:mm");
 
   return (
@@ -118,6 +122,10 @@ export default async function ClubManagePage({
               <Button type="submit">{t("saveProfile")}</Button>
             </div>
           </form>
+          <div className="mt-6 border-t border-border pt-5">
+            <p className="mb-3 text-sm font-medium">{tp("clubPhotos")}</p>
+            <PhotoUploader kind="club" entityId={club.id} initial={clubPhotos} />
+          </div>
         </CardContent>
       </Card>
 
@@ -231,6 +239,11 @@ export default async function ClubManagePage({
                     </div>
                     <Button type="submit" size="sm" variant="outline">{t("addBlackout")}</Button>
                   </form>
+                </div>
+
+                <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
+                  <h3 className="mb-3 text-sm font-semibold">{tp("courtPhotos")}</h3>
+                  <PhotoUploader kind="court" entityId={court.id} initial={parseJSON<string[]>(court.photos, [])} />
                 </div>
 
                 <div className="flex items-center justify-between border-t border-border pt-3">
