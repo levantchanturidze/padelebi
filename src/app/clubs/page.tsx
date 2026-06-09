@@ -8,6 +8,7 @@ import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
+import { normalizeCity } from "@/lib/city-map";
 
 export default async function ClubsPage({
   searchParams,
@@ -17,10 +18,12 @@ export default async function ClubsPage({
   const { city, indoor } = await searchParams;
   const t = await getTranslations("clubs");
 
+  const cityQuery = city ? normalizeCity(city) : undefined;
+
   const clubs = await prisma.club.findMany({
     where: {
       status: "APPROVED",
-      ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+      ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
     },
     include: { courts: { where: { isActive: true } } },
     orderBy: { name: "asc" },
