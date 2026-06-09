@@ -44,7 +44,27 @@
     "outdoor": "Outdoor",
     "apply": "Apply",
     "clear": "Clear",
+    "surface": "Surface",
+    "anySurface": "Any surface",
+    "maxPrice": "Max price (GEL/hr)",
+    "maxPricePlaceholder": "e.g. 80",
+    "amenities": "Amenities",
     "noResults": "No clubs match your search. Try clearing filters.",
+    "surfaceLabels": {
+      "ARTIFICIAL_GRASS": "Artificial grass",
+      "CONCRETE": "Concrete",
+      "PANORAMIC": "Panoramic glass"
+    },
+    "amenityLabels": {
+      "PARKING": "Parking",
+      "SHOWERS": "Showers",
+      "LOCKER_ROOM": "Locker room",
+      "PRO_SHOP": "Pro shop",
+      "CAFE": "Café",
+      "RACKET_RENTAL": "Racket rental",
+      "LIGHTING": "Floodlights",
+      "WHEELCHAIR_ACCESS": "Wheelchair access"
+    },
     "courts": "{count} courts",
     "fromPrice": "from {price}/hr"
   },
