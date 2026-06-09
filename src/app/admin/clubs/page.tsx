@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,12 +7,6 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { setClubStatusAction } from "@/app/actions/admin";
-
-const ADMIN_NAV = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/clubs", label: "Clubs" },
-  { href: "/admin/users", label: "Users" },
-];
 
 const tone = { APPROVED: "success", PENDING: "warning", SUSPENDED: "danger" } as const;
 
@@ -27,6 +22,13 @@ function StatusButton({ clubId, status, label, variant }: { clubId: string; stat
 
 export default async function AdminClubsPage() {
   await requireRole(["PLATFORM_ADMIN"], "/admin/clubs");
+  const t = await getTranslations("admin");
+
+  const ADMIN_NAV = [
+    { href: "/admin", label: t("overview") },
+    { href: "/admin/clubs", label: t("clubs") },
+    { href: "/admin/users", label: t("users") },
+  ];
 
   const clubs = await prisma.club.findMany({
     include: { owner: true, courts: true },
@@ -34,7 +36,7 @@ export default async function AdminClubsPage() {
   });
 
   return (
-    <DashboardShell title="Clubs" subtitle="Approve, suspend and review clubs." nav={ADMIN_NAV} current="/admin/clubs">
+    <DashboardShell title={t("clubs")} subtitle={t("approvePending")} nav={ADMIN_NAV} current="/admin/clubs">
       <div className="space-y-3">
         {clubs.map((club) => (
           <Card key={club.id}>
@@ -53,16 +55,16 @@ export default async function AdminClubsPage() {
               <div className="flex items-center gap-2">
                 {club.status === "APPROVED" && (
                   <Link href={`/clubs/${club.slug}`} className="text-sm text-brand-600 hover:underline">
-                    View
+                    {t("view")}
                   </Link>
                 )}
                 {club.status !== "APPROVED" && (
-                  <StatusButton clubId={club.id} status="APPROVED" label="Approve" variant="primary" />
+                  <StatusButton clubId={club.id} status="APPROVED" label={t("approve")} variant="primary" />
                 )}
                 {club.status !== "SUSPENDED" ? (
-                  <StatusButton clubId={club.id} status="SUSPENDED" label="Suspend" variant="danger" />
+                  <StatusButton clubId={club.id} status="SUSPENDED" label={t("suspend")} variant="danger" />
                 ) : (
-                  <StatusButton clubId={club.id} status="APPROVED" label="Reinstate" variant="outline" />
+                  <StatusButton clubId={club.id} status="APPROVED" label={t("reinstate")} variant="outline" />
                 )}
               </div>
             </CardContent>

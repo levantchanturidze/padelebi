@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +9,13 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 
-export const metadata = { title: "Find padel courts — Padelebi" };
-
 export default async function ClubsPage({
   searchParams,
 }: {
   searchParams: Promise<{ city?: string; indoor?: string }>;
 }) {
   const { city, indoor } = await searchParams;
+  const t = await getTranslations("clubs");
 
   const clubs = await prisma.club.findMany({
     where: {
@@ -34,26 +34,26 @@ export default async function ClubsPage({
 
   return (
     <Container className="py-10">
-      <h1 className="text-3xl font-bold tracking-tight">Find padel courts</h1>
-      <p className="mt-1 text-muted">{filtered.length} clubs available</p>
+      <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+      <p className="mt-1 text-muted">{t("clubsAvailable", { count: filtered.length })}</p>
 
       <form className="mt-6 flex flex-wrap items-end gap-3" action="/clubs">
         <div className="w-48">
-          <label className="mb-1.5 block text-sm font-medium">City</label>
-          <Input name="city" placeholder="e.g. Tbilisi" defaultValue={city ?? ""} />
+          <label className="mb-1.5 block text-sm font-medium">{t("city")}</label>
+          <Input name="city" placeholder={t("cityPlaceholder")} defaultValue={city ?? ""} />
         </div>
         <div className="w-48">
-          <label className="mb-1.5 block text-sm font-medium">Court type</label>
+          <label className="mb-1.5 block text-sm font-medium">{t("courtType")}</label>
           <Select name="indoor" defaultValue={indoor ?? ""}>
-            <option value="">Any</option>
-            <option value="indoor">Indoor</option>
-            <option value="outdoor">Outdoor</option>
+            <option value="">{t("any")}</option>
+            <option value="indoor">{t("indoor")}</option>
+            <option value="outdoor">{t("outdoor")}</option>
           </Select>
         </div>
-        <Button type="submit">Apply</Button>
+        <Button type="submit">{t("apply")}</Button>
         {(city || indoor) && (
           <Link href="/clubs" className="text-sm text-muted hover:text-foreground">
-            Clear
+            {t("clear")}
           </Link>
         )}
       </form>
@@ -77,9 +77,9 @@ export default async function ClubsPage({
                     <MapPin className="h-3.5 w-3.5" /> {club.city}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
-                    <Badge tone="brand">{club.courts.length} courts</Badge>
+                    <Badge tone="brand">{t("courts", { count: club.courts.length })}</Badge>
                     {minPrice !== null && (
-                      <span className="text-sm font-medium">from {formatGEL(minPrice)}/hr</span>
+                      <span className="text-sm font-medium">{t("fromPrice", { price: formatGEL(minPrice) })}</span>
                     )}
                   </div>
                 </CardContent>
@@ -90,9 +90,7 @@ export default async function ClubsPage({
       </div>
 
       {filtered.length === 0 && (
-        <p className="mt-16 text-center text-muted">
-          No clubs match your search. Try clearing filters.
-        </p>
+        <p className="mt-16 text-center text-muted">{t("noResults")}</p>
       )}
     </Container>
   );

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Check } from "lucide-react";
 import { addDays, format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ export default async function ClubDetailPage({
 }) {
   const { slug } = await params;
   const { courtId, date } = await searchParams;
+  const t = await getTranslations("clubDetail");
 
   const club = await prisma.club.findFirst({
     where: { slug, status: "APPROVED" },
@@ -41,8 +43,7 @@ export default async function ClubDetailPage({
   const amenities = parseJSON<Amenity[]>(club.amenities, []);
   const photos = parseJSON<string[]>(club.photos, []);
 
-  const selectedCourt =
-    club.courts.find((c) => c.id === courtId) ?? club.courts[0] ?? null;
+  const selectedCourt = club.courts.find((c) => c.id === courtId) ?? club.courts[0] ?? null;
   const selectedDate = parseDateParam(date);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -77,9 +78,7 @@ export default async function ClubDetailPage({
 
             {amenities.length > 0 && (
               <div className="mt-6">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-                  Amenities
-                </h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{t("amenities")}</h2>
                 <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {amenities.map((a) => (
                     <li key={a} className="flex items-center gap-2 text-sm">
@@ -92,20 +91,15 @@ export default async function ClubDetailPage({
             )}
 
             <div className="mt-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
-                Courts
-              </h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{t("courts")}</h2>
               <div className="mt-3 space-y-2">
                 {club.courts.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm"
-                  >
+                  <div key={c.id} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm">
                     <span className="font-medium">{c.name}</span>
                     <span className="flex items-center gap-2 text-muted">
                       <Badge tone="muted">{SURFACE_LABELS[c.surface as Surface] ?? c.surface}</Badge>
                       <Badge tone={c.isIndoor ? "brand" : "neutral"}>
-                        {c.isIndoor ? "Indoor" : "Outdoor"}
+                        {c.isIndoor ? t("indoor") : t("outdoor")}
                       </Badge>
                       {formatGEL(c.pricePerHourGEL)}/hr
                     </span>
@@ -118,11 +112,10 @@ export default async function ClubDetailPage({
           {/* Right: booking */}
           <Card className="h-fit lg:sticky lg:top-20">
             <CardContent>
-              <h2 className="text-lg font-semibold">Book a court</h2>
+              <h2 className="text-lg font-semibold">{t("bookACourt")}</h2>
 
               {selectedCourt ? (
                 <>
-                  {/* Court tabs */}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {club.courts.map((c) => (
                       <Link
@@ -141,7 +134,6 @@ export default async function ClubDetailPage({
                     ))}
                   </div>
 
-                  {/* Date pills */}
                   <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                     {days.map((d) => {
                       const ds = format(d, "yyyy-MM-dd");
@@ -153,9 +145,7 @@ export default async function ClubDetailPage({
                           scroll={false}
                           className={[
                             "flex min-w-14 flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
-                            active
-                              ? "border-brand-500 bg-brand-500 text-white"
-                              : "border-border hover:border-brand-400",
+                            active ? "border-brand-500 bg-brand-500 text-white" : "border-border hover:border-brand-400",
                           ].join(" ")}
                         >
                           <span className="font-medium">{format(d, "EEE")}</span>
@@ -166,16 +156,11 @@ export default async function ClubDetailPage({
                   </div>
 
                   <div className="mt-5">
-                    <BookingPanel
-                      slots={slots}
-                      courtId={selectedCourt.id}
-                      slug={club.slug}
-                      isAuthenticated={!!user}
-                    />
+                    <BookingPanel slots={slots} courtId={selectedCourt.id} slug={club.slug} isAuthenticated={!!user} />
                   </div>
                 </>
               ) : (
-                <p className="mt-4 text-sm text-muted">No active courts yet.</p>
+                <p className="mt-4 text-sm text-muted">{t("noActiveCourts")}</p>
               )}
             </CardContent>
           </Card>

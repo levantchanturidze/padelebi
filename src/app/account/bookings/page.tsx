@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,14 +10,10 @@ import { requireUser } from "@/lib/session";
 import { cancelBookingAction } from "@/app/actions/booking";
 import { formatGEL } from "@/lib/utils";
 
-const ACCOUNT_NAV = [
-  { href: "/account/bookings", label: "My bookings" },
-  { href: "/account/profile", label: "Profile" },
-];
-
 function BookingRow({
   booking,
   cancellable,
+  cancelLabel,
 }: {
   booking: {
     id: string;
@@ -27,6 +24,7 @@ function BookingRow({
     court: { name: string; club: { name: string; slug: string } };
   };
   cancellable: boolean;
+  cancelLabel: string;
 }) {
   const tone =
     booking.status === "CANCELLED" ? "danger" : booking.status === "CONFIRMED" ? "success" : "warning";
@@ -50,9 +48,7 @@ function BookingRow({
           <form action={cancelBookingAction}>
             <input type="hidden" name="bookingId" value={booking.id} />
             <input type="hidden" name="redirectTo" value="/account/bookings" />
-            <Button type="submit" variant="outline" size="sm">
-              Cancel
-            </Button>
+            <Button type="submit" variant="outline" size="sm">{cancelLabel}</Button>
           </form>
         )}
       </div>
@@ -67,6 +63,12 @@ export default async function MyBookingsPage({
 }) {
   const user = await requireUser("/account/bookings");
   const { booked, error } = await searchParams;
+  const t = await getTranslations("accountBookings");
+
+  const ACCOUNT_NAV = [
+    { href: "/account/bookings", label: t("title") },
+    { href: "/account/profile", label: t("profile") },
+  ];
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
@@ -79,32 +81,30 @@ export default async function MyBookingsPage({
   const past = bookings.filter((b) => b.endTime < now || b.status === "CANCELLED");
 
   return (
-    <DashboardShell title="My bookings" nav={ACCOUNT_NAV} current="/account/bookings">
+    <DashboardShell title={t("title")} nav={ACCOUNT_NAV} current="/account/bookings">
       {booked && (
         <p className="mb-4 rounded-[var(--radius-md)] bg-brand-50 px-4 py-3 text-sm text-brand-700">
-          Booking confirmed! Pay at the club when you arrive.
+          {t("confirmed")}
         </p>
       )}
       {error === "cancel" && (
         <p className="mb-4 rounded-[var(--radius-md)] bg-red-50 px-4 py-3 text-sm text-danger">
-          Could not cancel — bookings must be cancelled at least 2 hours before start.
+          {t("cancelError")}
         </p>
       )}
 
       <Card>
         <CardContent>
-          <h2 className="font-semibold">Upcoming</h2>
+          <h2 className="font-semibold">{t("upcoming")}</h2>
           {upcoming.length === 0 ? (
             <p className="mt-3 text-sm text-muted">
-              No upcoming bookings.{" "}
-              <Link href="/clubs" className="text-brand-600 hover:underline">
-                Find a court
-              </Link>
+              {t("noUpcoming")}{" "}
+              <Link href="/clubs" className="text-brand-600 hover:underline">{t("findACourt")}</Link>
             </p>
           ) : (
             <div className="mt-2">
               {upcoming.map((b) => (
-                <BookingRow key={b.id} booking={b} cancellable />
+                <BookingRow key={b.id} booking={b} cancellable cancelLabel={t("cancel")} />
               ))}
             </div>
           )}
@@ -114,10 +114,10 @@ export default async function MyBookingsPage({
       {past.length > 0 && (
         <Card className="mt-6">
           <CardContent>
-            <h2 className="font-semibold">Past & cancelled</h2>
+            <h2 className="font-semibold">{t("pastCancelled")}</h2>
             <div className="mt-2 opacity-80">
               {past.map((b) => (
-                <BookingRow key={b.id} booking={b} cancellable={false} />
+                <BookingRow key={b.id} booking={b} cancellable={false} cancelLabel={t("cancel")} />
               ))}
             </div>
           </CardContent>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,15 +11,16 @@ import { requireRole } from "@/lib/session";
 import { createClubAction } from "@/app/actions/club";
 import { formatGEL } from "@/lib/utils";
 
-const CLUB_NAV = [
-  { href: "/club", label: "Overview" },
-  { href: "/club/bookings", label: "Bookings" },
-];
-
 const statusTone = { APPROVED: "success", PENDING: "warning", SUSPENDED: "danger" } as const;
 
 export default async function ClubOverviewPage() {
   const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/club");
+  const t = await getTranslations("club");
+
+  const CLUB_NAV = [
+    { href: "/club", label: t("overview") },
+    { href: "/club/bookings", label: t("bookings") },
+  ];
 
   const clubs = await prisma.club.findMany({
     where: user.role === "PLATFORM_ADMIN" ? {} : { ownerId: user.id },
@@ -45,36 +47,14 @@ export default async function ClubOverviewPage() {
   const revenueToday = todaysBookings.reduce((sum, b) => sum + b.priceGEL, 0);
 
   return (
-    <DashboardShell
-      title="Club dashboard"
-      subtitle="Manage your clubs, courts and bookings."
-      nav={CLUB_NAV}
-      current="/club"
-    >
-      {/* Stats */}
+    <DashboardShell title={t("title")} subtitle={t("desc")} nav={CLUB_NAV} current="/club">
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted">Clubs</p>
-            <p className="mt-1 text-2xl font-bold">{clubs.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted">Bookings today</p>
-            <p className="mt-1 text-2xl font-bold">{todaysBookings.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent>
-            <p className="text-sm text-muted">Revenue today</p>
-            <p className="mt-1 text-2xl font-bold">{formatGEL(revenueToday)}</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent><p className="text-sm text-muted">{t("clubsCount")}</p><p className="mt-1 text-2xl font-bold">{clubs.length}</p></CardContent></Card>
+        <Card><CardContent><p className="text-sm text-muted">{t("bookingsToday")}</p><p className="mt-1 text-2xl font-bold">{todaysBookings.length}</p></CardContent></Card>
+        <Card><CardContent><p className="text-sm text-muted">{t("revenueToday")}</p><p className="mt-1 text-2xl font-bold">{formatGEL(revenueToday)}</p></CardContent></Card>
       </div>
 
-      {/* Clubs */}
-      <h2 className="mt-8 font-semibold">Your clubs</h2>
+      <h2 className="mt-8 font-semibold">{t("yourClubs")}</h2>
       <div className="mt-3 space-y-3">
         {clubs.map((club) => (
           <Card key={club.id}>
@@ -86,34 +66,25 @@ export default async function ClubOverviewPage() {
                     {club.status.toLowerCase()}
                   </Badge>
                 </div>
-                <p className="mt-0.5 text-sm text-muted">
-                  {club.city} · {club.courts.length} courts
-                </p>
+                <p className="mt-0.5 text-sm text-muted">{club.city} · {club.courts.length} courts</p>
               </div>
               <Link href={`/club/${club.id}`}>
-                <Button variant="outline" size="sm">Manage</Button>
+                <Button variant="outline" size="sm">{t("manage")}</Button>
               </Link>
             </CardContent>
           </Card>
         ))}
-        {clubs.length === 0 && <p className="text-sm text-muted">No clubs yet. Add one below.</p>}
+        {clubs.length === 0 && <p className="text-sm text-muted">{t("noClubs")}</p>}
       </div>
 
-      {/* Today's bookings */}
       {todaysBookings.length > 0 && (
         <>
-          <h2 className="mt-8 font-semibold">Today&apos;s bookings</h2>
+          <h2 className="mt-8 font-semibold">{t("todaysBookings")}</h2>
           <Card className="mt-3">
             <CardContent>
               {todaysBookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0"
-                >
-                  <span>
-                    {format(b.startTime, "HH:mm")}–{format(b.endTime, "HH:mm")} ·{" "}
-                    {b.court.club.name} / {b.court.name}
-                  </span>
+                <div key={b.id} className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0">
+                  <span>{format(b.startTime, "HH:mm")}–{format(b.endTime, "HH:mm")} · {b.court.club.name} / {b.court.name}</span>
                   <span className="text-muted">{b.user.name}</span>
                 </div>
               ))}
@@ -122,29 +93,28 @@ export default async function ClubOverviewPage() {
         </>
       )}
 
-      {/* Add club */}
-      <h2 className="mt-8 font-semibold">Add a new club</h2>
+      <h2 className="mt-8 font-semibold">{t("addNewClub")}</h2>
       <Card className="mt-3">
         <CardContent>
           <form action={createClubAction} className="grid max-w-xl gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Label htmlFor="name">Club name</Label>
+              <Label htmlFor="name">{t("clubName")}</Label>
               <Input id="name" name="name" required />
             </div>
             <div>
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">{t("city")}</Label>
               <Input id="city" name="city" required />
             </div>
             <div>
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">{t("address")}</Label>
               <Input id="address" name="address" required />
             </div>
             <div className="sm:col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea id="description" name="description" />
             </div>
             <div className="sm:col-span-2">
-              <Button type="submit">Create club (pending approval)</Button>
+              <Button type="submit">{t("createClub")}</Button>
             </div>
           </form>
         </CardContent>

@@ -1,22 +1,20 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createBookingAction, type BookingActionState } from "@/app/actions/booking";
 import { Button } from "@/components/ui/button";
 import { formatGEL } from "@/lib/utils";
 
 export type ClientSlot = {
-  start: string; // ISO
-  end: string; // ISO
+  start: string;
+  end: string;
   available: boolean;
   priceGEL: number;
 };
 
 function timeLabel(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 export function BookingPanel({
@@ -30,16 +28,14 @@ export function BookingPanel({
   slug: string;
   isAuthenticated: boolean;
 }) {
-  const [state, action, pending] = useActionState<BookingActionState, FormData>(
-    createBookingAction,
-    undefined,
-  );
+  const t = useTranslations("booking");
+  const [state, action, pending] = useActionState<BookingActionState, FormData>(createBookingAction, undefined);
   const [selected, setSelected] = useState<ClientSlot | null>(null);
 
   if (slots.length === 0) {
     return (
       <p className="rounded-[var(--radius-md)] bg-background p-4 text-sm text-muted">
-        This court is closed on the selected day.
+        {t("closed")}
       </p>
     );
   }
@@ -83,13 +79,11 @@ export function BookingPanel({
           <input type="hidden" name="start" value={selected.start} />
           <input type="hidden" name="end" value={selected.end} />
           <div className="text-sm">
-            <p className="font-medium">
-              {timeLabel(selected.start)}–{timeLabel(selected.end)}
-            </p>
-            <p className="text-muted">{formatGEL(selected.priceGEL)} · pay at club</p>
+            <p className="font-medium">{timeLabel(selected.start)}–{timeLabel(selected.end)}</p>
+            <p className="text-muted">{formatGEL(selected.priceGEL)} · {t("payAtClub")}</p>
           </div>
           <Button type="submit" disabled={pending}>
-            {pending ? "Booking…" : isAuthenticated ? "Confirm booking" : "Sign in to book"}
+            {pending ? t("confirming") : isAuthenticated ? t("confirm") : t("signInToBook")}
           </Button>
         </form>
       )}
