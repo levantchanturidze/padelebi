@@ -20,7 +20,7 @@ export default async function ClubsPage({
   const clubs = await prisma.club.findMany({
     where: {
       status: "APPROVED",
-      ...(city ? { city: { contains: city } } : {}),
+      ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
     },
     include: { courts: { where: { isActive: true } } },
     orderBy: { name: "asc" },
