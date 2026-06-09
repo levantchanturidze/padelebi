@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { SKILL_LEVELS } from "@/lib/enums";
@@ -37,4 +38,36 @@ export async function updateProfileAction(
   });
   revalidatePath("/account/profile");
   return { success: "Profile updated." };
+}
+
+const passwordSchema = z.object({
+  current: z.string().min(1),
+  next: z.string().min(8),
+  confirm: z.string().min(8),
+});
+
+export async function changePasswordAction(
+  _prev: ProfileState,
+  formData: FormData,
+): Promise<ProfileState> {
+  const user = await requireUser("/account/profile");
+  const parsed = passwordSchema.safeParse({
+    current: formData.get("current"),
+    next: formData.get("next"),
+    confirm: formData.get("confirm"),
+  });
+  if (!parsed.success) return { error: "Please fill in all fields (min 8 chars for new password)." };
+
+  const { current, next, confirm } = parsed.data;
+  if (next !== confirm) return { error: "New passwords do not match." };
+
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!dbUser) return { error: "User not found." };
+
+  const valid = await bcrypt.compare(current, dbUser.passwordHash);
+  if (!valid) return { error: "Current password is incorrect." };
+
+  const passwordHash = await bcrypt.hash(next, 12);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+  return { success: "Password changed successfully." };
 }
