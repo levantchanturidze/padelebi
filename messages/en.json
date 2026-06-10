@@ -181,6 +181,8 @@
     "uploading": "Uploading…",
     "saving": "Saving…",
     "remove": "Remove",
+    "setCover": "Set as cover",
+    "cover": "Cover",
     "uploadError": "Upload failed"
   },
   "club": {

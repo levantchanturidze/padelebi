@@ -42,6 +42,12 @@ export function PhotoUploader({ kind, entityId, initial }: Props) {
     save(next);
   }
 
+  function setCover(url: string) {
+    const next = [url, ...photos.filter((p) => p !== url)];
+    setPhotos(next);
+    save(next);
+  }
+
   function save(list: string[]) {
     const fd = new FormData();
     fd.append(kind === "club" ? "clubId" : "courtId", entityId);
@@ -56,16 +62,32 @@ export function PhotoUploader({ kind, entityId, initial }: Props) {
     <div className="space-y-3">
       {photos.length > 0 && (
         <div className="flex flex-wrap gap-3">
-          {photos.map((url) => (
+          {photos.map((url, i) => (
             <div key={url} className="group relative h-24 w-24 overflow-hidden rounded-[var(--radius-md)] border border-border">
               <Image src={url} alt="" fill className="object-cover" sizes="96px" />
-              <button
-                type="button"
-                onClick={() => remove(url)}
-                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 text-white text-xs font-medium"
-              >
-                {t("remove")}
-              </button>
+              {i === 0 && (
+                <span className="absolute left-1 top-1 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {t("cover")}
+                </span>
+              )}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55 opacity-0 transition-opacity group-hover:opacity-100">
+                {i !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCover(url)}
+                    className="text-[11px] font-semibold text-white hover:underline"
+                  >
+                    {t("setCover")}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => remove(url)}
+                  className="text-[11px] font-medium text-white/80 hover:underline"
+                >
+                  {t("remove")}
+                </button>
+              </div>
             </div>
           ))}
         </div>

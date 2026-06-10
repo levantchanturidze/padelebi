@@ -7,6 +7,7 @@ import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookingPanel, type ClientSlot } from "@/components/booking-panel";
+import { PhotoGallery } from "@/components/photo-gallery";
 import { prisma } from "@/lib/prisma";
 import { getCourtAvailability } from "@/lib/availability";
 import { getCurrentUser } from "@/lib/session";
@@ -60,10 +61,7 @@ export default async function ClubDetailPage({
 
   return (
     <>
-      <div
-        className="h-56 bg-brand-100 bg-cover bg-center sm:h-72"
-        style={photos[0] ? { backgroundImage: `url(${photos[0]})` } : undefined}
-      />
+      <PhotoGallery photos={photos} />
       <Container className="py-8">
         <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
           {/* Left: info */}
