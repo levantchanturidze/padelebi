@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export function PhotoGallery({ photos }: { photos: string[] }) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   const close = useCallback(() => setLightbox(null), []);
   const prev = useCallback(() => setLightbox((i) => (i! > 0 ? i! - 1 : photos.length - 1)), [photos.length]);
@@ -21,6 +22,18 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [lightbox, close, prev, next]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(dx) < 40) return; // too short — treat as tap → close
+    if (dx < 0) next(); else prev();
+  }
 
   if (photos.length === 0) {
     return <div className="h-56 bg-brand-100 sm:h-72" />;
@@ -70,6 +83,8 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
           onClick={close}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
           {/* Close */}
           <button
@@ -80,19 +95,19 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
             <X className="h-6 w-6" />
           </button>
 
-          {/* Prev / Next */}
+          {/* Prev / Next — hidden on mobile, use swipe instead */}
           {photos.length > 1 && (
             <>
               <button
                 type="button"
-                className="absolute left-3 rounded-full bg-black/40 p-2 text-white hover:bg-black/70"
+                className="absolute left-3 hidden rounded-full bg-black/40 p-2 text-white hover:bg-black/70 md:block"
                 onClick={(e) => { e.stopPropagation(); prev(); }}
               >
                 <ChevronLeft className="h-7 w-7" />
               </button>
               <button
                 type="button"
-                className="absolute right-3 rounded-full bg-black/40 p-2 text-white hover:bg-black/70"
+                className="absolute right-3 hidden rounded-full bg-black/40 p-2 text-white hover:bg-black/70 md:block"
                 onClick={(e) => { e.stopPropagation(); next(); }}
               >
                 <ChevronRight className="h-7 w-7" />
@@ -102,7 +117,7 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
 
           {/* Image */}
           <div
-            className="relative mx-16 h-[80vh] w-full max-w-4xl"
+            className="relative h-[80vh] w-full max-w-4xl px-4 md:mx-16 md:px-0"
             onClick={(e) => e.stopPropagation()}
           >
             <Image
