@@ -4,6 +4,7 @@ import { Logo } from "./logo";
 import { Container } from "./ui/container";
 import { LinkButton } from "./ui/button";
 import { LocaleSwitcher } from "./locale-switcher";
+import { MobileMenu } from "./mobile-menu";
 import { logoutAction } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/session";
 
@@ -23,20 +24,23 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
 
         <div className="flex items-center gap-2">
           <LocaleSwitcher current={locale} />
+          {/* Desktop auth */}
           {user ? (
-            <form action={logoutAction}>
+            <form action={logoutAction} className="hidden md:block">
               <button type="submit" className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted hover:text-foreground">
                 {t("signOut")}
               </button>
             </form>
           ) : (
-            <>
+            <div className="hidden items-center gap-2 md:flex">
               <Link href="/login" className="px-3 py-2 text-sm font-medium text-foreground hover:text-brand-600">
                 {t("signIn")}
               </Link>
               <LinkButton href="/register" size="sm">{t("signUp")}</LinkButton>
-            </>
+            </div>
           )}
+          {/* Mobile hamburger */}
+          <MobileMenu role={user?.role} isLoggedIn={!!user} />
         </div>
       </Container>
     </header>
