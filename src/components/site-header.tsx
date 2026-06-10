@@ -7,18 +7,28 @@ import { LocaleSwitcher } from "./locale-switcher";
 import { logoutAction } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/session";
 
-function dashboardLink(role: string, t: (k: string) => string): { href: string; label: string } | null {
+function dashboardLinks(role: string, t: (k: string) => string): { href: string; label: string }[] {
   switch (role) {
-    case "PLATFORM_ADMIN": return { href: "/admin", label: t("admin") };
-    case "CLUB_ADMIN": return { href: "/club", label: t("clubDashboard") };
-    case "PLAYER": return { href: "/account/bookings", label: t("myBookings") };
-    default: return null;
+    case "PLATFORM_ADMIN":
+      return [
+        { href: "/admin", label: t("admin") },
+        { href: "/account/bookings", label: t("myBookings") },
+      ];
+    case "CLUB_ADMIN":
+      return [
+        { href: "/club", label: t("clubDashboard") },
+        { href: "/account/bookings", label: t("myBookings") },
+      ];
+    case "PLAYER":
+      return [{ href: "/account/bookings", label: t("myBookings") }];
+    default:
+      return [];
   }
 }
 
 export async function SiteHeader({ user, locale }: { user: SessionUser | null; locale: string }) {
   const t = await getTranslations("nav");
-  const dash = user ? dashboardLink(user.role, t) : null;
+  const links = user ? dashboardLinks(user.role, t) : [];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
@@ -35,11 +45,15 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
           <LocaleSwitcher current={locale} />
           {user ? (
             <>
-              {dash && (
-                <Link href={dash.href} className="hidden text-sm font-medium text-foreground hover:text-brand-600 sm:inline">
-                  {dash.label}
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="hidden text-sm font-medium text-foreground hover:text-brand-600 sm:inline"
+                >
+                  {link.label}
                 </Link>
-              )}
+              ))}
               <form action={logoutAction}>
                 <button type="submit" className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted hover:text-foreground">
                   {t("signOut")}
