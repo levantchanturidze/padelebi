@@ -39,12 +39,9 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
     return <div className="h-56 bg-brand-100 sm:h-72" />;
   }
 
-  const thumbnails = photos.slice(1, 5);
-  const extra = photos.length > 5 ? photos.length - 5 : 0;
-
   return (
     <>
-      <div className="relative">
+      <div>
         {/* Main hero */}
         <div
           className="h-56 cursor-pointer bg-brand-100 bg-cover bg-center sm:h-72"
@@ -52,28 +49,22 @@ export function PhotoGallery({ photos }: { photos: string[] }) {
           onClick={() => setLightbox(0)}
         />
 
-        {/* Thumbnail strip — bottom-right of hero */}
-        {thumbnails.length > 0 && (
-          <div className="absolute bottom-3 right-3 flex gap-1.5">
-            {thumbnails.map((url, i) => (
+        {/* Thumbnail strip — horizontal scroll, visible on all screen sizes */}
+        {photos.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto bg-surface px-3 py-2 scrollbar-none">
+            {photos.map((url, i) => (
               <button
                 key={url}
                 type="button"
-                onClick={() => setLightbox(i + 1)}
-                className="h-14 w-14 shrink-0 overflow-hidden rounded border-2 border-white/80 shadow"
+                onClick={() => setLightbox(i)}
+                className={[
+                  "h-16 w-16 shrink-0 overflow-hidden rounded border-2 transition-opacity",
+                  i === 0 ? "border-brand-500" : "border-transparent hover:border-brand-300",
+                ].join(" ")}
               >
-                <Image src={url} alt="" width={56} height={56} className="h-full w-full object-cover" />
+                <Image src={url} alt="" width={64} height={64} className="h-full w-full object-cover" />
               </button>
             ))}
-            {extra > 0 && (
-              <button
-                type="button"
-                onClick={() => setLightbox(5)}
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded border-2 border-white/80 bg-black/60 text-sm font-semibold text-white shadow"
-              >
-                +{extra}
-              </button>
-            )}
           </div>
         )}
       </div>

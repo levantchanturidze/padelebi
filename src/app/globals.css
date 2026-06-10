@@ -64,3 +64,10 @@ body {
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-brand-500);
 }
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
