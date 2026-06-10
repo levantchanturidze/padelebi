@@ -5,6 +5,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { SiteNav } from "@/components/site-nav";
 import { getCurrentUser } from "@/lib/session";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -33,7 +34,10 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
           <SiteHeader user={user} locale={locale} />
-          <main className="flex-1">{children}</main>
+          <div className="flex flex-1">
+            {user && <SiteNav role={user.role} />}
+            <main className="min-w-0 flex-1">{children}</main>
+          </div>
           <SiteFooter />
         </NextIntlClientProvider>
       </body>
