@@ -2,7 +2,6 @@ import Link from "next/link";
 import { CalendarCheck, MapPin, Search, Zap } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
-import { LinkButton } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
@@ -28,25 +27,30 @@ export default async function HomePage() {
     <>
       {/* Hero */}
       <section className="bg-court text-white">
-        <Container className="py-20 sm:py-28">
+        <Container className="py-12 sm:py-24">
           <div className="max-w-2xl">
             <Badge tone="brand" className="bg-white/10 text-accent border-white/20">
               {t("headline")}
             </Badge>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+            <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:mt-4 sm:text-5xl">
               {t("subheadline")}
             </h1>
-            <p className="mt-4 text-lg text-white/80">{t("description")}</p>
-            <form action="/clubs" className="mt-8 flex max-w-md gap-2">
+            <p className="mt-3 text-base text-white/75 sm:mt-4 sm:text-lg">
+              {t("description")}
+            </p>
+            <form action="/clubs" className="mt-6 flex w-full max-w-md gap-2 sm:mt-8">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
                   name="city"
                   placeholder={t("searchPlaceholder")}
-                  className="h-12 w-full rounded-[var(--radius-md)] border border-transparent bg-white pl-9 pr-3 text-foreground placeholder:text-muted focus-ring"
+                  className="h-11 w-full rounded-[var(--radius-md)] border border-transparent bg-white pl-9 pr-3 text-sm text-foreground placeholder:text-muted focus-ring sm:h-12"
                 />
               </div>
-              <button type="submit" className="h-12 rounded-[var(--radius-md)] bg-accent px-5 text-sm font-semibold text-brand-900 hover:bg-accent/90 transition-colors">
+              <button
+                type="submit"
+                className="h-11 rounded-[var(--radius-md)] bg-accent px-4 text-sm font-semibold text-brand-900 transition-colors hover:bg-accent/90 sm:h-12 sm:px-5"
+              >
                 {t("search")}
               </button>
             </form>
@@ -55,17 +59,18 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-16">
+      <section id="how-it-works" className="py-10 sm:py-16">
         <Container>
-          <h2 className="text-2xl font-bold tracking-tight">{t("howItWorks")}</h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{t("howItWorks")}</h2>
+          {/* Mobile: horizontal scroll; Desktop: 3-column grid */}
+          <div className="mt-5 flex gap-4 overflow-x-auto pb-2 scrollbar-none sm:mt-8 sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0">
             {steps.map(({ icon: Icon, title, text }) => (
-              <Card key={title}>
+              <Card key={title} className="w-64 shrink-0 sm:w-auto">
                 <CardContent>
-                  <div className="grid h-11 w-11 place-items-center rounded-[var(--radius-md)] bg-brand-50 text-brand-600">
+                  <div className="grid h-10 w-10 place-items-center rounded-[var(--radius-md)] bg-brand-50 text-brand-600 sm:h-11 sm:w-11">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <h3 className="mt-4 font-semibold">{title}</h3>
+                  <h3 className="mt-3 font-semibold sm:mt-4">{title}</h3>
                   <p className="mt-1 text-sm text-muted">{text}</p>
                 </CardContent>
               </Card>
@@ -75,15 +80,15 @@ export default async function HomePage() {
       </section>
 
       {/* Featured clubs */}
-      <section className="pb-8">
+      <section className="pb-10 sm:pb-12">
         <Container>
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight">{t("featuredClubs")}</h2>
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{t("featuredClubs")}</h2>
             <Link href="/clubs" className="text-sm font-medium text-brand-600 hover:underline">
               {t("viewAll")}
             </Link>
           </div>
-          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {clubs.map((club) => {
               const photos = parseJSON<string[]>(club.photos, []);
               const minPrice = club.courts.length
@@ -93,7 +98,7 @@ export default async function HomePage() {
                 <Link key={club.id} href={`/clubs/${club.slug}`}>
                   <Card className="overflow-hidden transition-shadow hover:shadow-md">
                     <div
-                      className="h-40 bg-brand-100 bg-cover bg-center"
+                      className="h-36 bg-brand-100 bg-cover bg-center sm:h-40"
                       style={photos[0] ? { backgroundImage: `url(${photos[0]})` } : undefined}
                     />
                     <CardContent>
