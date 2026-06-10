@@ -62,58 +62,18 @@ export default async function ClubDetailPage({
   return (
     <>
       <PhotoGallery photos={photos} />
-      <Container className="py-8">
-        <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-          {/* Left: info */}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{club.name}</h1>
-            <p className="mt-2 flex items-center gap-1.5 text-muted">
-              <MapPin className="h-4 w-4" /> {club.address}, {club.city}
-            </p>
-            {club.description && (
-              <p className="mt-4 leading-relaxed text-foreground/90">{club.description}</p>
-            )}
+      <Container className="py-6 sm:py-8">
+        {/* On mobile: booking first, info below. On lg: side-by-side. */}
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-8">
 
-            {amenities.length > 0 && (
-              <div className="mt-6">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{t("amenities")}</h2>
-                <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {amenities.map((a) => (
-                    <li key={a} className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-brand-500" />
-                      {AMENITY_LABELS[a] ?? a}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{t("courts")}</h2>
-              <div className="mt-3 space-y-2">
-                {club.courts.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm">
-                    <span className="font-medium">{c.name}</span>
-                    <span className="flex items-center gap-2 text-muted">
-                      <Badge tone="muted">{SURFACE_LABELS[c.surface as Surface] ?? c.surface}</Badge>
-                      <Badge tone={c.isIndoor ? "brand" : "neutral"}>
-                        {c.isIndoor ? t("indoor") : t("outdoor")}
-                      </Badge>
-                      {formatGEL(c.pricePerHourGEL)}/hr
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: booking */}
-          <Card className="h-fit lg:sticky lg:top-20">
+          {/* Booking panel — order-1 on mobile (top), order-2 on lg (right) */}
+          <Card className="h-fit lg:order-2 lg:sticky lg:top-20">
             <CardContent>
               <h2 className="text-lg font-semibold">{t("bookACourt")}</h2>
 
               {selectedCourt ? (
                 <>
+                  {/* Court selector */}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {club.courts.map((c) => (
                       <Link
@@ -132,7 +92,8 @@ export default async function ClubDetailPage({
                     ))}
                   </div>
 
-                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                  {/* Date strip */}
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                     {days.map((d) => {
                       const ds = format(d, "yyyy-MM-dd");
                       const active = ds === dateStr;
@@ -142,8 +103,10 @@ export default async function ClubDetailPage({
                           href={`/clubs/${club.slug}?courtId=${selectedCourt.id}&date=${ds}`}
                           scroll={false}
                           className={[
-                            "flex min-w-14 flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
-                            active ? "border-brand-500 bg-brand-500 text-white" : "border-border hover:border-brand-400",
+                            "flex min-w-[3.25rem] flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
+                            active
+                              ? "border-brand-500 bg-brand-500 text-white"
+                              : "border-border hover:border-brand-400",
                           ].join(" ")}
                         >
                           <span className="font-medium">{format(d, "EEE")}</span>
@@ -154,7 +117,12 @@ export default async function ClubDetailPage({
                   </div>
 
                   <div className="mt-5">
-                    <BookingPanel slots={slots} courtId={selectedCourt.id} slug={club.slug} isAuthenticated={!!user} />
+                    <BookingPanel
+                      slots={slots}
+                      courtId={selectedCourt.id}
+                      slug={club.slug}
+                      isAuthenticated={!!user}
+                    />
                   </div>
                 </>
               ) : (
@@ -162,6 +130,61 @@ export default async function ClubDetailPage({
               )}
             </CardContent>
           </Card>
+
+          {/* Info — order-2 on mobile (below booking), order-1 on lg (left) */}
+          <div className="lg:order-1">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{club.name}</h1>
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted sm:text-base">
+              <MapPin className="h-4 w-4 shrink-0" /> {club.address}, {club.city}
+            </p>
+            {club.description && (
+              <p className="mt-4 text-sm leading-relaxed text-foreground/90 sm:text-base">
+                {club.description}
+              </p>
+            )}
+
+            {amenities.length > 0 && (
+              <div className="mt-6">
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {t("amenities")}
+                </h2>
+                <ul className="mt-3 grid grid-cols-2 gap-2">
+                  {amenities.map((a) => (
+                    <li key={a} className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 shrink-0 text-brand-500" />
+                      {AMENITY_LABELS[a] ?? a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="mt-6">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                {t("courts")}
+              </h2>
+              <div className="mt-3 space-y-2">
+                {club.courts.map((c) => (
+                  <div
+                    key={c.id}
+                    className="rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="font-medium text-brand-600">{formatGEL(c.pricePerHourGEL)}/სთ</span>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <Badge tone="muted">{SURFACE_LABELS[c.surface as Surface] ?? c.surface}</Badge>
+                      <Badge tone={c.isIndoor ? "brand" : "neutral"}>
+                        {c.isIndoor ? t("indoor") : t("outdoor")}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
       </Container>
     </>

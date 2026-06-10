@@ -73,7 +73,7 @@ export function BookingPanel({
       )}
 
       {selected && (
-        <form action={action} className="mt-4 flex items-center justify-between gap-4 rounded-[var(--radius-md)] border border-border bg-background p-4">
+        <form action={action} className="mt-4 flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
           <input type="hidden" name="courtId" value={courtId} />
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="start" value={selected.start} />
@@ -82,7 +82,7 @@ export function BookingPanel({
             <p className="font-medium">{timeLabel(selected.start)}–{timeLabel(selected.end)}</p>
             <p className="text-muted">{formatGEL(selected.priceGEL)} · {t("payAtClub")}</p>
           </div>
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending} className="w-full sm:w-auto">
             {pending ? t("confirming") : isAuthenticated ? t("confirm") : t("signInToBook")}
           </Button>
         </form>
