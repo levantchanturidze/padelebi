@@ -1,32 +1,62 @@
 "use client";
 
-import { useActionState, useRef, startTransition } from "react";
+import { useActionState, useEffect, useCallback, startTransition } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { registerAction, type AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false }) as any;
+declare global {
+  interface Window {
+    grecaptcha: {
+      ready: (cb: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    };
+    onRecaptchaLoad?: () => void;
+  }
+}
 
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
 export function RegisterForm() {
   const t = useTranslations("auth");
   const [state, action, pending] = useActionState<AuthState, FormData>(registerAction, undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recaptchaRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (!SITE_KEY || document.getElementById("recaptcha-v3-script")) return;
+    const script = document.createElement("script");
+    script.id = "recaptcha-v3-script";
+    script.src = `https://www.google.com/recaptcha/api.js?render=${SITE_KEY}`;
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+
+  const getToken = useCallback((): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!SITE_KEY) { resolve(""); return; }
+      window.grecaptcha.ready(async () => {
+        try {
+          const token = await window.grecaptcha.execute(SITE_KEY, { action: "register" });
+          resolve(token);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
-    if (SITE_KEY && recaptchaRef.current) {
-      recaptchaRef.current.reset();
-      const token: string | null = await recaptchaRef.current.executeAsync();
-      if (token) formData.set("recaptchaToken", token);
+    if (SITE_KEY) {
+      try {
+        const token = await getToken();
+        formData.set("recaptchaToken", token);
+      } catch {
+        // continue — server will reject if token missing
+      }
     }
 
     startTransition(() => { action(formData); });
@@ -62,14 +92,6 @@ export function RegisterForm() {
           <option value="CLUB_ADMIN">{t("listMyClub")}</option>
         </Select>
       </div>
-
-      {SITE_KEY && (
-        <ReCAPTCHA
-          ref={recaptchaRef}
-          sitekey={SITE_KEY}
-          size="invisible"
-        />
-      )}
 
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? t("creatingAccount") : t("createAccountBtn")}
