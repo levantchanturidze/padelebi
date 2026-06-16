@@ -19,18 +19,20 @@ const registerSchema = z
 export type AuthState = { error?: string } | undefined;
 
 export async function registerAction(_prev: AuthState, formData: FormData): Promise<AuthState> {
-  // Verify reCAPTCHA if secret key is configured
+  // Verify reCAPTCHA v3 if secret key is configured
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   if (secretKey) {
     const token = formData.get("recaptchaToken") as string | null;
-    if (!token) return { error: "Please complete the CAPTCHA." };
+    if (!token) return { error: "CAPTCHA verification failed. Please try again." };
     const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: `secret=${secretKey}&response=${token}`,
     });
-    const data = (await res.json()) as { success: boolean };
-    if (!data.success) return { error: "CAPTCHA verification failed. Please try again." };
+    const data = (await res.json()) as { success: boolean; score?: number };
+    if (!data.success || (data.score !== undefined && data.score < 0.5)) {
+      return { error: "CAPTCHA verification failed. Please try again." };
+    }
   }
 
   const parsed = registerSchema.safeParse({

@@ -1,24 +1,54 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, startTransition } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { registerAction, type AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 
-const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false });
+declare global {
+  interface Window {
+    grecaptcha: {
+      ready: (cb: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    };
+  }
+}
 
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
 export function RegisterForm() {
   const t = useTranslations("auth");
   const [state, action, pending] = useActionState<AuthState, FormData>(registerAction, undefined);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (!SITE_KEY) return;
+    const script = document.createElement("script");
+    script.src = `https://www.google.com/recaptcha/api.js?render=${SITE_KEY}`;
+    script.async = true;
+    document.head.appendChild(script);
+    return () => {
+      if (document.head.contains(script)) document.head.removeChild(script);
+    };
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+
+    if (SITE_KEY && typeof window !== "undefined" && window.grecaptcha) {
+      await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
+      const token = await window.grecaptcha.execute(SITE_KEY, { action: "register" });
+      formData.set("recaptchaToken", token);
+    }
+
+    startTransition(() => { action(formData); });
+  }
 
   return (
-    <form action={action} className="space-y-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
       {state?.error && (
         <p className="rounded-[var(--radius-md)] bg-red-50 px-3 py-2 text-sm text-danger">
           {state.error}
@@ -48,25 +78,7 @@ export function RegisterForm() {
         </Select>
       </div>
 
-      {/* reCAPTCHA token passed with form */}
-      <input type="hidden" name="recaptchaToken" value={captchaToken ?? ""} />
-
-      {SITE_KEY && (
-        <div className="flex justify-center">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <ReCAPTCHA
-            sitekey={SITE_KEY}
-            onChange={(token: string | null) => setCaptchaToken(token)}
-            onExpired={() => setCaptchaToken(null)}
-          />
-        </div>
-      )}
-
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={pending || (!!SITE_KEY && !captchaToken)}
-      >
+      <Button type="submit" className="w-full" disabled={pending}>
         {pending ? t("creatingAccount") : t("createAccountBtn")}
       </Button>
       <p className="text-center text-sm text-muted">
