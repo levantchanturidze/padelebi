@@ -58,7 +58,7 @@ export default async function ClubOverviewPage() {
       <div className="mt-3 space-y-3">
         {clubs.map((club) => (
           <Card key={club.id}>
-            <CardContent className="flex items-center justify-between">
+            <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{club.name}</span>
@@ -83,7 +83,7 @@ export default async function ClubOverviewPage() {
           <Card className="mt-3">
             <CardContent>
               {todaysBookings.map((b) => (
-                <div key={b.id} className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0">
+                <div key={b.id} className="flex flex-col gap-0.5 border-b border-border py-2 text-sm last:border-0 sm:flex-row sm:items-center sm:justify-between">
                   <span>{format(b.startTime, "HH:mm")}–{format(b.endTime, "HH:mm")} · {b.court.club.name} / {b.court.name}</span>
                   <span className="text-muted">{b.user.name}</span>
                 </div>

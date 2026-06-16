@@ -21,6 +21,9 @@
     "description": "Find courts in Tbilisi, Batumi and across Georgia. See real-time availability and reserve instantly.",
     "searchPlaceholder": "Search by city…",
     "search": "Search",
+    "stat1": "10+ clubs",
+    "stat2": "Tbilisi · Batumi · more",
+    "howItWorksLabel": "Simple process",
     "howItWorks": "How it works",
     "step1Title": "Find a club",
     "step1Desc": "Browse padel clubs by city and filter by surface, indoor/outdoor and price.",
@@ -28,10 +31,14 @@
     "step2Desc": "See live availability for each court and choose a time that works for you.",
     "step3Title": "Book instantly",
     "step3Desc": "Confirm your booking in one tap. Manage or cancel anytime from your account.",
+    "browseAll": "Browse clubs",
+    "featuredLabel": "Top picks",
     "featuredClubs": "Featured clubs",
     "viewAll": "View all",
     "courts": "{count} courts",
-    "fromPrice": "from {price}/hr"
+    "fromPrice": "from {price}/hr",
+    "bookNow": "Book now",
+    "noCLubs": "No clubs yet."
   },
   "clubs": {
     "title": "Find padel courts",

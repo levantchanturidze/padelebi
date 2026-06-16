@@ -144,18 +144,18 @@ export default async function ClubsPage({
   const hasFilters = city || indoor || surface || maxPrice || amenities || date || time;
 
   return (
-    <Container className="py-10">
-      <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
+    <Container className="py-6 sm:py-10">
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
       <p className="mt-1 text-muted">{t("clubsAvailable", { count: filtered.length })}</p>
 
       <form className="mt-6 space-y-4" action="/clubs">
         {/* Row 1: city, court type, surface, max price, submit */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-44">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("city")}</label>
             <Input name="city" placeholder={t("cityPlaceholder")} defaultValue={city ?? ""} />
           </div>
-          <div className="w-44">
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("courtType")}</label>
             <Select name="indoor" defaultValue={indoor ?? ""}>
               <option value="">{t("any")}</option>
@@ -163,7 +163,7 @@ export default async function ClubsPage({
               <option value="outdoor">{t("outdoor")}</option>
             </Select>
           </div>
-          <div className="w-44">
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("surface")}</label>
             <Select name="surface" defaultValue={surface ?? ""}>
               <option value="">{t("anySurface")}</option>
@@ -172,11 +172,11 @@ export default async function ClubsPage({
               ))}
             </Select>
           </div>
-          <div className="w-36">
+          <div className="sm:w-36">
             <label className="mb-1.5 block text-sm font-medium">{t("maxPrice")}</label>
             <Input name="maxPrice" type="number" min={0} placeholder={t("maxPricePlaceholder")} defaultValue={maxPrice ?? ""} />
           </div>
-          <div className="flex items-end gap-2 pb-0.5">
+          <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:pb-0.5">
             <Button type="submit">{t("apply")}</Button>
             {hasFilters && (
               <Link href="/clubs" className="text-sm text-muted hover:text-foreground">{t("clear")}</Link>
@@ -185,12 +185,12 @@ export default async function ClubsPage({
         </div>
 
         {/* Row 2: date + time availability */}
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="w-44">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("date")}</label>
             <Input name="date" type="date" min={todayStr} defaultValue={dateQuery ?? ""} />
           </div>
-          <div className="w-44">
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("time")}</label>
             <Select name="time" defaultValue={timeQuery ?? ""}>
               <option value="">{t("anyTime")}</option>

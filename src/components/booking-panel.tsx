@@ -52,12 +52,12 @@ export function BookingPanel({
               disabled={!slot.available}
               onClick={() => setSelected(slot)}
               className={[
-                "rounded-[var(--radius-md)] border px-2 py-2 text-sm font-medium transition-colors",
+                "rounded-[var(--radius-md)] border px-2 py-2.5 text-sm font-medium transition-all duration-150",
                 slot.available
                   ? isSelected
-                    ? "border-brand-500 bg-brand-500 text-white"
-                    : "border-border bg-surface hover:border-brand-400"
-                  : "cursor-not-allowed border-border bg-background text-muted line-through opacity-60",
+                    ? "border-brand-500 bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_2px_10px_rgba(21,163,71,0.35)]"
+                    : "border-border bg-surface hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+                  : "cursor-not-allowed border-border bg-background text-muted line-through opacity-50",
               ].join(" ")}
             >
               {timeLabel(slot.start)}
@@ -73,18 +73,27 @@ export function BookingPanel({
       )}
 
       {selected && (
-        <form action={action} className="mt-4 flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+        <form
+          action={action}
+          className="mt-4 rounded-[var(--radius-lg)] border border-brand-200 bg-brand-50 p-4 shadow-[0_2px_12px_rgba(21,163,71,0.1)]"
+        >
           <input type="hidden" name="courtId" value={courtId} />
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="start" value={selected.start} />
           <input type="hidden" name="end" value={selected.end} />
-          <div className="text-sm">
-            <p className="font-medium">{timeLabel(selected.start)}–{timeLabel(selected.end)}</p>
-            <p className="text-muted">{formatGEL(selected.priceGEL)} · {t("payAtClub")}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm">
+              <p className="font-semibold text-foreground">
+                {timeLabel(selected.start)}–{timeLabel(selected.end)}
+              </p>
+              <p className="mt-0.5 text-muted">
+                {formatGEL(selected.priceGEL)} · {t("payAtClub")}
+              </p>
+            </div>
+            <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+              {pending ? t("confirming") : isAuthenticated ? t("confirm") : t("signInToBook")}
+            </Button>
           </div>
-          <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-            {pending ? t("confirming") : isAuthenticated ? t("confirm") : t("signInToBook")}
-          </Button>
         </form>
       )}
     </div>

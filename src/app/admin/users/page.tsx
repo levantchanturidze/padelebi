@@ -29,66 +29,114 @@ export default async function AdminUsersPage() {
   return (
     <DashboardShell title={t("users")} subtitle={t("manageRoles")} nav={ADMIN_NAV} current="/admin/users">
       <Card>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted">
-                <th className="py-2 pr-4 font-medium">{t("user")}</th>
-                <th className="py-2 pr-4 font-medium">{t("role")}</th>
-                <th className="py-2 pr-4 font-medium">{t("activity")}</th>
-                <th className="py-2 pr-4 font-medium">{t("status")}</th>
-                <th className="py-2 font-medium">{t("actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => {
-                const isSelf = u.id === admin.id;
-                return (
-                  <tr key={u.id} className="border-b border-border last:border-0 align-middle">
-                    <td className="py-3 pr-4">
+        <CardContent>
+          {/* Mobile card list */}
+          <div className="space-y-3 sm:hidden">
+            {users.map((u) => {
+              const isSelf = u.id === admin.id;
+              return (
+                <div key={u.id} className="rounded-[var(--radius-md)] border border-border p-4 text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
                       <div className="font-medium">{u.name}{isSelf && <span className="text-muted"> {t("you")}</span>}</div>
                       <div className="text-muted">{u.email}</div>
-                    </td>
-                    <td className="py-3 pr-4">
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
                       <Badge tone={roleTone[u.role as keyof typeof roleTone] ?? "neutral"}>
                         {u.role.replace("_", " ").toLowerCase()}
                       </Badge>
-                    </td>
-                    <td className="py-3 pr-4 text-muted">
-                      {u._count.bookings} bookings · {u._count.clubs} clubs
-                    </td>
-                    <td className="py-3 pr-4">
                       <Badge tone={u.isActive ? "success" : "danger"}>
                         {u.isActive ? t("active") : t("disabled")}
                       </Badge>
-                    </td>
-                    <td className="py-3">
-                      {!isSelf && (
-                        <div className="flex items-center gap-2">
-                          <form action={setUserRoleAction} className="flex items-center gap-1">
-                            <input type="hidden" name="userId" value={u.id} />
-                            <Select name="role" defaultValue={u.role} className="h-8 w-36 text-xs">
-                              {ROLES.map((r) => (
-                                <option key={r} value={r}>{r.replace("_", " ").toLowerCase()}</option>
-                              ))}
-                            </Select>
-                            <Button type="submit" size="sm" variant="outline">{t("set")}</Button>
-                          </form>
-                          <form action={setUserActiveAction}>
-                            <input type="hidden" name="userId" value={u.id} />
-                            <input type="hidden" name="isActive" value={u.isActive ? "false" : "true"} />
-                            <Button type="submit" size="sm" variant={u.isActive ? "danger" : "primary"}>
-                              {u.isActive ? t("disable") : t("enable")}
-                            </Button>
-                          </form>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-muted">{u._count.bookings} bookings · {u._count.clubs} clubs</p>
+                  {!isSelf && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <form action={setUserRoleAction} className="flex items-center gap-1">
+                        <input type="hidden" name="userId" value={u.id} />
+                        <Select name="role" defaultValue={u.role} className="h-8 w-36 text-xs">
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>{r.replace("_", " ").toLowerCase()}</option>
+                          ))}
+                        </Select>
+                        <Button type="submit" size="sm" variant="outline">{t("set")}</Button>
+                      </form>
+                      <form action={setUserActiveAction}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <input type="hidden" name="isActive" value={u.isActive ? "false" : "true"} />
+                        <Button type="submit" size="sm" variant={u.isActive ? "danger" : "primary"}>
+                          {u.isActive ? t("disable") : t("enable")}
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-muted">
+                  <th className="py-2 pr-4 font-medium">{t("user")}</th>
+                  <th className="py-2 pr-4 font-medium">{t("role")}</th>
+                  <th className="py-2 pr-4 font-medium">{t("activity")}</th>
+                  <th className="py-2 pr-4 font-medium">{t("status")}</th>
+                  <th className="py-2 font-medium">{t("actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => {
+                  const isSelf = u.id === admin.id;
+                  return (
+                    <tr key={u.id} className="border-b border-border last:border-0 align-middle">
+                      <td className="py-3 pr-4">
+                        <div className="font-medium">{u.name}{isSelf && <span className="text-muted"> {t("you")}</span>}</div>
+                        <div className="text-muted">{u.email}</div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Badge tone={roleTone[u.role as keyof typeof roleTone] ?? "neutral"}>
+                          {u.role.replace("_", " ").toLowerCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4 text-muted">
+                        {u._count.bookings} bookings · {u._count.clubs} clubs
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Badge tone={u.isActive ? "success" : "danger"}>
+                          {u.isActive ? t("active") : t("disabled")}
+                        </Badge>
+                      </td>
+                      <td className="py-3">
+                        {!isSelf && (
+                          <div className="flex items-center gap-2">
+                            <form action={setUserRoleAction} className="flex items-center gap-1">
+                              <input type="hidden" name="userId" value={u.id} />
+                              <Select name="role" defaultValue={u.role} className="h-8 w-36 text-xs">
+                                {ROLES.map((r) => (
+                                  <option key={r} value={r}>{r.replace("_", " ").toLowerCase()}</option>
+                                ))}
+                              </Select>
+                              <Button type="submit" size="sm" variant="outline">{t("set")}</Button>
+                            </form>
+                            <form action={setUserActiveAction}>
+                              <input type="hidden" name="userId" value={u.id} />
+                              <input type="hidden" name="isActive" value={u.isActive ? "false" : "true"} />
+                              <Button type="submit" size="sm" variant={u.isActive ? "danger" : "primary"}>
+                                {u.isActive ? t("disable") : t("enable")}
+                              </Button>
+                            </form>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </DashboardShell>

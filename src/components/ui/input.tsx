@@ -1,8 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const fieldBase =
-  "h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus-ring disabled:opacity-50";
+const fieldBase = [
+  "h-10 w-full rounded-[var(--radius-md)] border border-border bg-surface",
+  "px-3 text-sm text-foreground placeholder:text-muted",
+  "shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)]",
+  "transition-shadow duration-150",
+  "focus-ring focus-visible:shadow-[inset_0_1px_2px_rgba(0,0,0,0.04),0_0_0_3px_rgba(21,163,71,0.12)]",
+  "disabled:opacity-50 disabled:cursor-not-allowed",
+].join(" ");
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   function Input({ className, ...props }, ref) {
@@ -12,7 +18,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, ...props }, ref) {
-    return <select ref={ref} className={cn(fieldBase, "pr-8", className)} {...props} />;
+    return <select ref={ref} className={cn(fieldBase, "pr-8 cursor-pointer", className)} {...props} />;
   },
 );
 
@@ -21,7 +27,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
     return (
       <textarea
         ref={ref}
-        className={cn(fieldBase, "min-h-24 py-2", className)}
+        className={cn(fieldBase, "min-h-24 py-2 resize-y", className)}
         {...props}
       />
     );

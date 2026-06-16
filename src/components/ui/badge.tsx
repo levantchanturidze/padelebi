@@ -5,11 +5,11 @@ type Tone = "neutral" | "brand" | "success" | "warning" | "danger" | "muted";
 
 const tones: Record<Tone, string> = {
   neutral: "bg-background text-foreground border border-border",
-  brand: "bg-brand-50 text-brand-700 border border-brand-200",
-  success: "bg-brand-50 text-success border border-brand-200",
-  warning: "bg-amber-50 text-warning border border-amber-200",
-  danger: "bg-red-50 text-danger border border-red-200",
-  muted: "bg-background text-muted border border-border",
+  brand:   "bg-brand-50 text-brand-700 border border-brand-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+  success: "bg-brand-50 text-success border border-brand-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+  warning: "bg-amber-50 text-warning border border-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+  danger:  "bg-red-50 text-danger border border-red-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]",
+  muted:   "bg-background text-muted border border-border",
 };
 
 export function Badge({
@@ -20,7 +20,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide",
         tones[tone],
         className,
       )}

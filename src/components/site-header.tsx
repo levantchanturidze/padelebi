@@ -12,34 +12,48 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
   const t = await getTranslations("nav");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-surface/80 backdrop-blur-xl backdrop-saturate-150 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
       <Container className="flex h-16 items-center justify-between gap-4">
         <div className="flex items-center gap-8">
           <Logo />
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
-            <Link href="/clubs" className="hover:text-foreground">{t("findCourts")}</Link>
-            <Link href="/#how-it-works" className="hover:text-foreground">{t("howItWorks")}</Link>
+            <Link
+              href="/clubs"
+              className="transition-colors duration-150 hover:text-foreground"
+            >
+              {t("findCourts")}
+            </Link>
+            <Link
+              href="/#how-it-works"
+              className="transition-colors duration-150 hover:text-foreground"
+            >
+              {t("howItWorks")}
+            </Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
           <LocaleSwitcher current={locale} />
-          {/* Desktop auth */}
           {user ? (
             <form action={logoutAction} className="hidden md:block">
-              <button type="submit" className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted hover:text-foreground">
+              <button
+                type="submit"
+                className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted transition-colors duration-150 hover:text-foreground"
+              >
                 {t("signOut")}
               </button>
             </form>
           ) : (
-            <div className="hidden items-center gap-2 md:flex">
-              <Link href="/login" className="px-3 py-2 text-sm font-medium text-foreground hover:text-brand-600">
+            <div className="hidden items-center gap-1 md:flex">
+              <Link
+                href="/login"
+                className="rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium text-muted transition-colors duration-150 hover:text-foreground"
+              >
                 {t("signIn")}
               </Link>
               <LinkButton href="/register" size="sm">{t("signUp")}</LinkButton>
             </div>
           )}
-          {/* Mobile hamburger */}
           <MobileMenu role={user?.role} isLoggedIn={!!user} />
         </div>
       </Container>
