@@ -1,15 +1,21 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { registerAction, type AuthState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 
+const ReCAPTCHA = dynamic(() => import("react-google-recaptcha"), { ssr: false });
+
+const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+
 export function RegisterForm() {
   const t = useTranslations("auth");
   const [state, action, pending] = useActionState<AuthState, FormData>(registerAction, undefined);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   return (
     <form action={action} className="space-y-4">
@@ -41,7 +47,26 @@ export function RegisterForm() {
           <option value="CLUB_ADMIN">{t("listMyClub")}</option>
         </Select>
       </div>
-      <Button type="submit" className="w-full" disabled={pending}>
+
+      {/* reCAPTCHA token passed with form */}
+      <input type="hidden" name="recaptchaToken" value={captchaToken ?? ""} />
+
+      {SITE_KEY && (
+        <div className="flex justify-center">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <ReCAPTCHA
+            sitekey={SITE_KEY}
+            onChange={(token: string | null) => setCaptchaToken(token)}
+            onExpired={() => setCaptchaToken(null)}
+          />
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={pending || (!!SITE_KEY && !captchaToken)}
+      >
         {pending ? t("creatingAccount") : t("createAccountBtn")}
       </Button>
       <p className="text-center text-sm text-muted">
