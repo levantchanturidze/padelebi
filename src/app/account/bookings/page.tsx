@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, LinkButton } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { cancelBookingAction } from "@/app/actions/booking";
@@ -14,6 +14,7 @@ function BookingRow({
   booking,
   cancellable,
   cancelLabel,
+  rescheduleLabel,
 }: {
   booking: {
     id: string;
@@ -25,6 +26,7 @@ function BookingRow({
   };
   cancellable: boolean;
   cancelLabel: string;
+  rescheduleLabel: string;
 }) {
   const tone =
     booking.status === "CANCELLED" ? "danger" : booking.status === "CONFIRMED" ? "success" : "warning";
@@ -32,7 +34,7 @@ function BookingRow({
     <div className="flex flex-col gap-3 border-b border-border py-4 last:border-0 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <div className="flex items-center gap-2">
-          <Link href={`/clubs/${booking.court.club.slug}`} className="font-medium hover:underline">
+          <Link href={`/account/bookings/${booking.id}`} className="font-medium hover:underline">
             {booking.court.club.name}
           </Link>
           <Badge tone={tone}>{booking.status.toLowerCase()}</Badge>
@@ -42,14 +44,23 @@ function BookingRow({
           {format(booking.endTime, "HH:mm")}
         </p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <span className="text-sm font-medium">{formatGEL(booking.priceGEL)}</span>
         {cancellable && (
-          <form action={cancelBookingAction}>
-            <input type="hidden" name="bookingId" value={booking.id} />
-            <input type="hidden" name="redirectTo" value="/account/bookings" />
-            <Button type="submit" variant="outline" size="sm">{cancelLabel}</Button>
-          </form>
+          <>
+            <LinkButton
+              href={`/account/bookings/${booking.id}/reschedule`}
+              variant="outline"
+              size="sm"
+            >
+              {rescheduleLabel}
+            </LinkButton>
+            <form action={cancelBookingAction}>
+              <input type="hidden" name="bookingId" value={booking.id} />
+              <input type="hidden" name="redirectTo" value="/account/bookings" />
+              <Button type="submit" variant="outline" size="sm">{cancelLabel}</Button>
+            </form>
+          </>
         )}
       </div>
     </div>
@@ -103,9 +114,18 @@ export default async function MyBookingsPage({
             </p>
           ) : (
             <div className="mt-2">
-              {upcoming.map((b) => (
-                <BookingRow key={b.id} booking={b} cancellable cancelLabel={t("cancel")} />
-              ))}
+              {upcoming.map((b) => {
+                const cancellable = b.startTime.getTime() - Date.now() > 2 * 3_600_000;
+                return (
+                  <BookingRow
+                    key={b.id}
+                    booking={b}
+                    cancellable={cancellable}
+                    cancelLabel={t("cancel")}
+                    rescheduleLabel={t("reschedule")}
+                  />
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -117,7 +137,7 @@ export default async function MyBookingsPage({
             <h2 className="font-semibold">{t("pastCancelled")}</h2>
             <div className="mt-2 opacity-80">
               {past.map((b) => (
-                <BookingRow key={b.id} booking={b} cancellable={false} cancelLabel={t("cancel")} />
+                <BookingRow key={b.id} booking={b} cancellable={false} cancelLabel={t("cancel")} rescheduleLabel={t("reschedule")} />
               ))}
             </div>
           </CardContent>

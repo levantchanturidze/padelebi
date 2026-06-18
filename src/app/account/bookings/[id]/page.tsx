@@ -138,16 +138,26 @@ export default async function BookingDetailPage({
           </LinkButton>
 
           {cancellable && (
-            <div className="pt-2">
-              <form action={cancelBookingAction}>
-                <input type="hidden" name="bookingId" value={booking.id} />
-                <input type="hidden" name="redirectTo" value="/account/bookings" />
-                <Button type="submit" variant="ghost" size="sm" className="w-full text-danger hover:bg-red-50">
-                  {t("cancel")}
-                </Button>
-              </form>
-              <p className="mt-1 text-center text-xs text-muted">{t("cancelNote")}</p>
-            </div>
+            <>
+              <LinkButton
+                href={`/account/bookings/${booking.id}/reschedule`}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                {t("reschedule")}
+              </LinkButton>
+              <div>
+                <form action={cancelBookingAction}>
+                  <input type="hidden" name="bookingId" value={booking.id} />
+                  <input type="hidden" name="redirectTo" value="/account/bookings" />
+                  <Button type="submit" variant="ghost" size="sm" className="w-full text-danger hover:bg-red-50">
+                    {t("cancel")}
+                  </Button>
+                </form>
+                <p className="mt-1 text-center text-xs text-muted">{t("cancelNote")}</p>
+              </div>
+            </>
           )}
         </div>
 

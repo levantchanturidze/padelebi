@@ -95,6 +95,19 @@
     "duration": "Duration",
     "notesPlaceholder": "Notes (optional)"
   },
+  "reschedule": {
+    "title": "Reschedule Booking",
+    "currentSlot": "Current slot",
+    "pickNewTime": "Pick a new time",
+    "confirm": "Confirm reschedule",
+    "confirming": "Rescheduling…",
+    "back": "Back to booking",
+    "closed": "Court is closed on this day.",
+    "noSlots": "No available slots match the original duration.",
+    "sameSlot": "This is already your current slot — pick a different one.",
+    "duration": "Duration",
+    "payAtClub": "pay at club"
+  },
   "bookingDetail": {
     "title": "Booking details",
     "confirmed": "Booking confirmed!",
@@ -109,6 +122,7 @@
     "notes": "Notes",
     "viewBookings": "My bookings",
     "bookAnother": "Book another court",
+    "reschedule": "Reschedule",
     "cancel": "Cancel booking",
     "cancelNote": "Cancellations allowed up to 2 hours before start."
   },
@@ -121,7 +135,8 @@
     "noUpcoming": "No upcoming bookings.",
     "findACourt": "Find a court",
     "pastCancelled": "Past & cancelled",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "reschedule": "Reschedule"
   },
   "profile": {
     "title": "Profile",

@@ -31,7 +31,11 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
  * subtracting existing (non-cancelled) bookings and blackouts. Past slots are
  * marked unavailable.
  */
-export async function getCourtAvailability(courtId: string, date: Date): Promise<Slot[]> {
+export async function getCourtAvailability(
+  courtId: string,
+  date: Date,
+  excludeBookingId?: string,
+): Promise<Slot[]> {
   const court = await prisma.court.findUnique({
     where: { id: courtId },
     include: {
@@ -48,7 +52,10 @@ export async function getCourtAvailability(courtId: string, date: Date): Promise
   if (!schedule) return []; // closed that day
 
   const bookings = court.bookings.filter(
-    (b) => b.status !== "CANCELLED" && overlaps(b.startTime, b.endTime, dayStart, dayEnd),
+    (b) =>
+      b.status !== "CANCELLED" &&
+      b.id !== excludeBookingId &&
+      overlaps(b.startTime, b.endTime, dayStart, dayEnd),
   );
   const blackouts = court.blackouts.filter((bl) =>
     overlaps(bl.startTime, bl.endTime, dayStart, dayEnd),

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createBooking, cancelBooking, BookingError } from "@/lib/booking";
+import { createBooking, cancelBooking, rescheduleBooking, BookingError } from "@/lib/booking";
 import { getCurrentUser } from "@/lib/session";
 
 export type BookingActionState = { error?: string; success?: string } | undefined;
@@ -40,6 +40,36 @@ export async function createBookingAction(
 
   revalidatePath(`/clubs/${slug}`);
   redirect(`/account/bookings/${bookingId}`);
+}
+
+export async function rescheduleBookingAction(
+  _prev: BookingActionState,
+  formData: FormData,
+): Promise<BookingActionState> {
+  const user = await getCurrentUser();
+  const bookingId = String(formData.get("bookingId") ?? "");
+  const start = String(formData.get("start") ?? "");
+  const end = String(formData.get("end") ?? "");
+
+  if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/account/bookings/${bookingId}/reschedule`)}`);
+
+  const newStartTime = new Date(start);
+  const newEndTime = new Date(end);
+  if (Number.isNaN(newStartTime.getTime()) || Number.isNaN(newEndTime.getTime())) {
+    return { error: "Invalid time slot." };
+  }
+
+  let newBookingId: string;
+  try {
+    const newBooking = await rescheduleBooking({ bookingId, userId: user.id, newStartTime, newEndTime });
+    newBookingId = newBooking.id;
+  } catch (err) {
+    if (err instanceof BookingError) return { error: err.message };
+    return { error: "Could not reschedule. Please try again." };
+  }
+
+  revalidatePath("/account/bookings");
+  redirect(`/account/bookings/${newBookingId}`);
 }
 
 export async function cancelBookingAction(formData: FormData) {
