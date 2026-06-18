@@ -8,6 +8,7 @@ type CreateBookingInput = {
   userId: string;
   startTime: Date;
   endTime: Date;
+  notes?: string;
 };
 
 /**
@@ -15,7 +16,7 @@ type CreateBookingInput = {
  * immediately before insert to guarantee no double-booking under concurrency.
  */
 export async function createBooking(input: CreateBookingInput) {
-  const { courtId, userId, startTime, endTime } = input;
+  const { courtId, userId, startTime, endTime, notes } = input;
 
   if (endTime <= startTime) throw new BookingError("Invalid time range.");
   if (startTime < new Date()) throw new BookingError("Cannot book a slot in the past.");
@@ -63,6 +64,7 @@ export async function createBooking(input: CreateBookingInput) {
         priceGEL,
         status: "CONFIRMED",
         paymentStatus: "UNPAID", // Phase 1: pay at club
+        notes: notes || null,
       },
     });
   });

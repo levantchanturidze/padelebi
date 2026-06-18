@@ -91,7 +91,26 @@
     "payAtClub": "pay at club",
     "confirming": "Booking…",
     "confirm": "Confirm booking",
-    "signInToBook": "Sign in to book"
+    "signInToBook": "Sign in to book",
+    "duration": "Duration",
+    "notesPlaceholder": "Notes (optional)"
+  },
+  "bookingDetail": {
+    "title": "Booking details",
+    "confirmed": "Booking confirmed!",
+    "cancelled": "Booking cancelled",
+    "payAtClub": "Pay at club",
+    "club": "Club",
+    "court": "Court",
+    "date": "Date",
+    "time": "Time",
+    "duration": "Duration",
+    "total": "Total",
+    "notes": "Notes",
+    "viewBookings": "My bookings",
+    "bookAnother": "Book another court",
+    "cancel": "Cancel booking",
+    "cancelNote": "Cancellations allowed up to 2 hours before start."
   },
   "accountBookings": {
     "title": "My bookings",
