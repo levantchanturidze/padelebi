@@ -13,6 +13,7 @@ export async function setClubStatusAction(formData: FormData) {
 
   await prisma.club.update({ where: { id: clubId }, data: { status } });
   revalidatePath("/admin/clubs");
+  revalidatePath("/admin");
 }
 
 export async function setUserRoleAction(formData: FormData) {
