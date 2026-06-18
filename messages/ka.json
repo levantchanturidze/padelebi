@@ -269,6 +269,17 @@
     "deleteCourt": "კორტის წაშლა",
     "addCourt": "კორტის დამატება",
     "courtPlaceholder": "კორტი 1",
-    "addCourtBtn": "კორტის დამატება"
+    "addCourtBtn": "კორტის დამატება",
+    "revenueWeek": "კვირის შემოსავალი",
+    "allCourts": "ყველა კორტი",
+    "allStatuses": "ყველა სტატუსი",
+    "filterBtn": "გაფილტვრა",
+    "clearFilter": "გასუფთავება",
+    "showingBookings": "{count} ჯავშანი",
+    "upcomingBookings": "მომავალი ჯავშნები",
+    "noUpcoming": "მომავალი ჯავშნები არ არის.",
+    "profileTab": "პროფილი",
+    "courtsTab": "კორტები",
+    "notes": "შენიშვნა"
   }
 }

@@ -38,7 +38,7 @@ export async function createClubAction(formData: FormData) {
     },
   });
   revalidatePath("/club");
-  redirect(`/club/${club.id}`);
+  redirect(`/club/${club.id}?tab=profile`);
 }
 
 export async function updateClubAction(formData: FormData) {
@@ -59,7 +59,7 @@ export async function updateClubAction(formData: FormData) {
     data: { ...parsed, amenities: JSON.stringify(amenities) },
   });
   revalidatePath(`/club/${clubId}`);
-  redirect(`/club/${clubId}?saved=1`);
+  redirect(`/club/${clubId}?saved=1&tab=profile`);
 }
 
 /* ----------------------------- Photos ----------------------------- */
@@ -122,7 +122,7 @@ export async function createCourtAction(formData: FormData) {
     },
   });
   revalidatePath(`/club/${clubId}`);
-  redirect(`/club/${clubId}?saved=1`);
+  redirect(`/club/${clubId}?saved=1&tab=courts`);
 }
 
 export async function updateCourtAction(formData: FormData) {
@@ -142,7 +142,7 @@ export async function updateCourtAction(formData: FormData) {
     data: { ...data, isActive: formData.get("isActive") === "on" },
   });
   revalidatePath(`/club/${court.clubId}`);
-  redirect(`/club/${court.clubId}?saved=1`);
+  redirect(`/club/${court.clubId}?saved=1&tab=courts`);
 }
 
 export async function deleteCourtAction(formData: FormData) {
@@ -153,7 +153,7 @@ export async function deleteCourtAction(formData: FormData) {
 
   await prisma.court.delete({ where: { id: courtId } });
   revalidatePath(`/club/${court.clubId}`);
-  redirect(`/club/${court.clubId}?saved=1`);
+  redirect(`/club/${court.clubId}?saved=1&tab=courts`);
 }
 
 /* --------------------------- Schedules --------------------------- */
@@ -169,7 +169,7 @@ export async function updateScheduleAction(formData: FormData) {
   const slotMinutes = Number(formData.get("slotMinutes") ?? 90);
   const openDays = Array.from({ length: 7 }, (_, d) => formData.get(`day_${d}`) === "on");
 
-  if (closeMinutes <= openMinutes) redirect(`/club/${court.clubId}?error=schedule`);
+  if (closeMinutes <= openMinutes) redirect(`/club/${court.clubId}?error=schedule&tab=courts`);
 
   await prisma.$transaction([
     prisma.courtSchedule.deleteMany({ where: { courtId } }),
@@ -182,7 +182,7 @@ export async function updateScheduleAction(formData: FormData) {
     }),
   ]);
   revalidatePath(`/club/${court.clubId}`);
-  redirect(`/club/${court.clubId}?saved=1`);
+  redirect(`/club/${court.clubId}?saved=1&tab=courts`);
 }
 
 /* --------------------------- Blackouts --------------------------- */
@@ -197,14 +197,14 @@ export async function createBlackoutAction(formData: FormData) {
   const end = new Date(String(formData.get("end")));
   const reason = String(formData.get("reason") ?? "");
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
-    redirect(`/club/${court.clubId}?error=blackout`);
+    redirect(`/club/${court.clubId}?error=blackout&tab=courts`);
   }
 
   await prisma.blackout.create({
     data: { courtId, startTime: start, endTime: end, reason: reason || null },
   });
   revalidatePath(`/club/${court.clubId}`);
-  redirect(`/club/${court.clubId}?saved=1`);
+  redirect(`/club/${court.clubId}?saved=1&tab=courts`);
 }
 
 export async function deleteBlackoutAction(formData: FormData) {
@@ -218,5 +218,5 @@ export async function deleteBlackoutAction(formData: FormData) {
 
   await prisma.blackout.delete({ where: { id } });
   revalidatePath(`/club/${blackout.court.clubId}`);
-  redirect(`/club/${blackout.court.clubId}?saved=1`);
+  redirect(`/club/${blackout.court.clubId}?saved=1&tab=courts`);
 }

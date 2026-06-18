@@ -269,6 +269,17 @@
     "deleteCourt": "Delete court",
     "addCourt": "Add a court",
     "courtPlaceholder": "Court 1",
-    "addCourtBtn": "Add court"
+    "addCourtBtn": "Add court",
+    "revenueWeek": "Revenue this week",
+    "allCourts": "All courts",
+    "allStatuses": "All statuses",
+    "filterBtn": "Filter",
+    "clearFilter": "Clear",
+    "showingBookings": "{count} bookings",
+    "upcomingBookings": "Upcoming bookings",
+    "noUpcoming": "No upcoming bookings.",
+    "profileTab": "Profile",
+    "courtsTab": "Courts",
+    "notes": "Notes"
   }
 }

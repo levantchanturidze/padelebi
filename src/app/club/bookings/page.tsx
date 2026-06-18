@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { Filter } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +12,19 @@ import { formatGEL } from "@/lib/utils";
 
 const tone = { CONFIRMED: "success", PENDING: "warning", CANCELLED: "danger" } as const;
 
-export default async function ClubBookingsPage() {
+function parseLocalDate(dateStr: string, endOfDay = false): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return endOfDay
+    ? new Date(y, m - 1, d, 23, 59, 59, 999)
+    : new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+export default async function ClubBookingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string; courtId?: string; status?: string }>;
+}) {
+  const { from, to, courtId: courtIdParam, status } = await searchParams;
   const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/club/bookings");
   const t = await getTranslations("club");
 
@@ -26,17 +39,109 @@ export default async function ClubBookingsPage() {
   });
   const clubIds = clubs.map((c) => c.id);
 
+  const courts = await prisma.court.findMany({
+    where: { clubId: { in: clubIds } },
+    select: { id: true, name: true, club: { select: { name: true } } },
+    orderBy: [{ club: { name: "asc" } }, { name: "asc" }],
+  });
+
+  // Only filter by courtId if it belongs to this user's clubs
+  const courtId = courtIdParam && courts.some((c) => c.id === courtIdParam) ? courtIdParam : undefined;
+
+  const fromDate = from ? parseLocalDate(from) : null;
+  const toDate = to ? parseLocalDate(to, true) : null;
+  const startTimeFilter: { gte?: Date; lte?: Date } = {};
+  if (fromDate) startTimeFilter.gte = fromDate;
+  if (toDate) startTimeFilter.lte = toDate;
+  const activeStatus = status && status !== "all" ? status : undefined;
+
   const bookings = await prisma.booking.findMany({
-    where: { court: { clubId: { in: clubIds } } },
+    where: {
+      court: { clubId: { in: clubIds } },
+      ...(courtId ? { courtId } : {}),
+      ...(activeStatus ? { status: activeStatus } : {}),
+      ...(Object.keys(startTimeFilter).length ? { startTime: startTimeFilter } : {}),
+    },
     include: { court: { include: { club: true } }, user: true },
     orderBy: { startTime: "desc" },
-    take: 200,
+    take: 300,
   });
 
   const now = new Date();
+  const hasFilters = !!(from || to || courtId || activeStatus);
 
   return (
     <DashboardShell title={t("bookings")} subtitle={t("allBookings")} nav={CLUB_NAV} current="/club/bookings">
+
+      {/* Filter bar */}
+      <Card className="mb-5">
+        <CardContent className="py-3">
+          <form method="GET" className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">From</label>
+              <input
+                name="from"
+                type="date"
+                defaultValue={from ?? ""}
+                className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">To</label>
+              <input
+                name="to"
+                type="date"
+                defaultValue={to ?? ""}
+                className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">{t("court")}</label>
+              <select
+                name="courtId"
+                defaultValue={courtIdParam ?? ""}
+                className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              >
+                <option value="">{t("allCourts")}</option>
+                {courts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {clubs.length > 1 ? `${c.club.name} / ${c.name}` : c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-muted">{t("status")}</label>
+              <select
+                name="status"
+                defaultValue={status ?? "all"}
+                className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              >
+                <option value="all">{t("allStatuses")}</option>
+                <option value="CONFIRMED">confirmed</option>
+                <option value="CANCELLED">cancelled</option>
+              </select>
+            </div>
+            <Button type="submit" size="sm" className="gap-1.5">
+              <Filter className="h-3.5 w-3.5" />
+              {t("filterBtn")}
+            </Button>
+            {hasFilters && (
+              <a
+                href="/club/bookings"
+                className="h-9 inline-flex items-center px-3 text-sm text-muted hover:text-foreground transition-colors"
+              >
+                {t("clearFilter")}
+              </a>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      <p className="mb-3 text-sm text-muted">
+        {t("showingBookings", { count: bookings.length })}
+      </p>
+
       <Card>
         <CardContent>
           {bookings.length === 0 ? (
@@ -60,6 +165,9 @@ export default async function ClubBookingsPage() {
                       <div>
                         <p>{b.user.name}</p>
                         {b.user.phone && <p className="text-muted">{b.user.phone}</p>}
+                        {b.notes && (
+                          <p className="mt-1 italic text-muted">"{b.notes}"</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{formatGEL(b.priceGEL)}</span>
@@ -75,6 +183,7 @@ export default async function ClubBookingsPage() {
                   </div>
                 ))}
               </div>
+
               {/* Desktop table */}
               <div className="hidden overflow-x-auto sm:block">
                 <table className="w-full text-sm">
@@ -83,6 +192,7 @@ export default async function ClubBookingsPage() {
                       <th className="py-2 pr-4 font-medium">{t("when")}</th>
                       <th className="py-2 pr-4 font-medium">{t("clubCourt")}</th>
                       <th className="py-2 pr-4 font-medium">{t("player")}</th>
+                      <th className="py-2 pr-4 font-medium">{t("notes")}</th>
                       <th className="py-2 pr-4 font-medium">{t("price")}</th>
                       <th className="py-2 pr-4 font-medium">{t("status")}</th>
                       <th className="py-2 font-medium"></th>
@@ -91,19 +201,22 @@ export default async function ClubBookingsPage() {
                   <tbody>
                     {bookings.map((b) => (
                       <tr key={b.id} className="border-b border-border last:border-0">
-                        <td className="py-2 pr-4">{format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}</td>
-                        <td className="py-2 pr-4">{b.court.club.name} / {b.court.name}</td>
-                        <td className="py-2 pr-4">
+                        <td className="py-2.5 pr-4 whitespace-nowrap">{format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}</td>
+                        <td className="py-2.5 pr-4">{b.court.club.name} / {b.court.name}</td>
+                        <td className="py-2.5 pr-4">
                           {b.user.name}
                           {b.user.phone ? <span className="text-muted"> · {b.user.phone}</span> : null}
                         </td>
-                        <td className="py-2 pr-4">{formatGEL(b.priceGEL)}</td>
-                        <td className="py-2 pr-4">
+                        <td className="py-2.5 pr-4 max-w-[180px] text-muted italic">
+                          {b.notes ?? "—"}
+                        </td>
+                        <td className="py-2.5 pr-4 whitespace-nowrap">{formatGEL(b.priceGEL)}</td>
+                        <td className="py-2.5 pr-4">
                           <Badge tone={tone[b.status as keyof typeof tone] ?? "neutral"}>
                             {b.status.toLowerCase()}
                           </Badge>
                         </td>
-                        <td className="py-2">
+                        <td className="py-2.5">
                           {b.status !== "CANCELLED" && b.endTime >= now && (
                             <form action={cancelBookingAction}>
                               <input type="hidden" name="bookingId" value={b.id} />
