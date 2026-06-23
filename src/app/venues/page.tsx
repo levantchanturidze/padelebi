@@ -6,10 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SportBadge } from "@/components/sport/sport-badge";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity } from "@/lib/city-map";
-import { SURFACES, AMENITIES } from "@/lib/enums";
+import { AMENITIES } from "@/lib/enums";
 
 const TIME_OPTIONS = Array.from({ length: 18 }, (_, i) => {
   const h = i + 6;
@@ -31,15 +32,15 @@ export default async function VenuesPage({
 }: {
   searchParams: Promise<{
     city?: string;
+    sport?: string;
     indoor?: string;
-    surface?: string;
     maxPrice?: string;
     amenities?: string | string[];
     date?: string;
     time?: string;
   }>;
 }) {
-  const { city, indoor, surface, maxPrice, amenities, date, time } = await searchParams;
+  const { city, sport, indoor, maxPrice, amenities, date, time } = await searchParams;
   const t = await getTranslations("clubs");
 
   const cityQuery = city ? normalizeCity(city) : undefined;
@@ -71,28 +72,37 @@ export default async function VenuesPage({
 
   const needsAvailability = weekday !== undefined && timeMinutes !== undefined && dayStart && dayEnd;
 
-  const venues = await prisma.venue.findMany({
-    where: {
-      status: "APPROVED",
-      ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
-      ...(surface ? { facilities: { some: { surface, isActive: true } } } : {}),
-    },
-    include: {
-      facilities: {
-        where: { isActive: true },
-        include: {
-          schedules: true,
-          bookings: needsAvailability
-            ? { where: { status: { not: "CANCELLED" }, startTime: { gte: dayStart }, endTime: { lte: dayEnd! } } }
-            : { take: 0 },
-          blackouts: needsAvailability
-            ? { where: { startTime: { lt: dayEnd! }, endTime: { gt: dayStart! } } }
-            : { take: 0 },
+  const sportFilter = sport && sport !== "all" ? sport : undefined;
+  const sportRow = sportFilter
+    ? await prisma.sport.findUnique({ where: { slug: sportFilter } })
+    : null;
+
+  const [venues, sports] = await Promise.all([
+    prisma.venue.findMany({
+      where: {
+        status: "APPROVED",
+        ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
+        ...(sportRow ? { facilities: { some: { sportId: sportRow.id, isActive: true } } } : {}),
+      },
+      include: {
+        facilities: {
+          where: { isActive: true, ...(sportRow ? { sportId: sportRow.id } : {}) },
+          include: {
+            sport: true,
+            schedules: true,
+            bookings: needsAvailability
+              ? { where: { status: { not: "CANCELLED" }, startTime: { gte: dayStart }, endTime: { lte: dayEnd! } } }
+              : { take: 0 },
+            blackouts: needsAvailability
+              ? { where: { startTime: { lt: dayEnd! }, endTime: { gt: dayStart! } } }
+              : { take: 0 },
+          },
         },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+    }),
+    prisma.sport.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+  ]);
 
   const filtered = venues.filter((venue) => {
     if (indoor === "indoor" && !venue.facilities.some((c) => c.isIndoor)) return false;
@@ -110,7 +120,6 @@ export default async function VenuesPage({
 
     if (weekday !== undefined) {
       if (needsAvailability && dayStart) {
-        // Show only venues with at least one facility that has a free slot at the chosen date+time
         const hasSlot = venue.facilities.some((facility) => {
           const schedule = facility.schedules.find((s) => s.dayOfWeek === weekday);
           if (!schedule) return false;
@@ -126,7 +135,6 @@ export default async function VenuesPage({
         });
         if (!hasSlot) return false;
       } else {
-        // Date selected but no time — show venues open on that weekday
         if (!venue.facilities.some((c) => c.schedules.some((s) => s.dayOfWeek === weekday))) return false;
       }
     }
@@ -141,7 +149,7 @@ export default async function VenuesPage({
     String(today.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const hasFilters = city || indoor || surface || maxPrice || amenities || date || time;
+  const hasFilters = city || sport || indoor || maxPrice || amenities || date || time;
 
   return (
     <Container className="py-6 sm:py-10">
@@ -149,11 +157,20 @@ export default async function VenuesPage({
       <p className="mt-1 text-muted">{t("clubsAvailable", { count: filtered.length })}</p>
 
       <form className="mt-6 space-y-4" action="/venues">
-        {/* Row 1: city, facility type, surface, max price, submit */}
+        {/* Row 1: city, sport, court type, max price, submit */}
         <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
           <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("city")}</label>
             <Input name="city" placeholder={t("cityPlaceholder")} defaultValue={city ?? ""} />
+          </div>
+          <div className="sm:w-44">
+            <label className="mb-1.5 block text-sm font-medium">Sport</label>
+            <Select name="sport" defaultValue={sport ?? "all"}>
+              <option value="all">All sports</option>
+              {sports.map((s) => (
+                <option key={s.id} value={s.slug}>{s.name}</option>
+              ))}
+            </Select>
           </div>
           <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("courtType")}</label>
@@ -161,15 +178,6 @@ export default async function VenuesPage({
               <option value="">{t("any")}</option>
               <option value="indoor">{t("indoor")}</option>
               <option value="outdoor">{t("outdoor")}</option>
-            </Select>
-          </div>
-          <div className="sm:w-44">
-            <label className="mb-1.5 block text-sm font-medium">{t("surface")}</label>
-            <Select name="surface" defaultValue={surface ?? ""}>
-              <option value="">{t("anySurface")}</option>
-              {SURFACES.map((s) => (
-                <option key={s} value={s}>{t(`surfaceLabels.${s}` as never)}</option>
-              ))}
             </Select>
           </div>
           <div className="sm:w-36">
@@ -184,7 +192,7 @@ export default async function VenuesPage({
           </div>
         </div>
 
-        {/* Row 2: date + time availability */}
+        {/* Row 2: date + time */}
         <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
           <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("date")}</label>
@@ -227,6 +235,10 @@ export default async function VenuesPage({
           const minPrice = venue.facilities.length
             ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL))
             : null;
+          // Unique sports across this venue's facilities
+          const sportTags = Array.from(
+            new Map(venue.facilities.map((f) => [f.sport.id, f.sport])).values(),
+          );
           return (
             <Link key={venue.id} href={`/venues/${venue.slug}`}>
               <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -239,6 +251,16 @@ export default async function VenuesPage({
                   <p className="mt-1 flex items-center gap-1 text-sm text-muted">
                     <MapPin className="h-3.5 w-3.5" /> {venue.city}
                   </p>
+                  {sportTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {sportTags.slice(0, 4).map((s) => (
+                        <SportBadge key={s.id} name={s.name} />
+                      ))}
+                      {sportTags.length > 4 && (
+                        <span className="text-[11px] text-muted">+{sportTags.length - 4}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-3 flex items-center justify-between">
                     <Badge tone="brand">{t("courts", { count: venue.facilities.length })}</Badge>
                     {minPrice !== null && (

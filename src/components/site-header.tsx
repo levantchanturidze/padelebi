@@ -24,6 +24,12 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
               {t("findCourts")}
             </Link>
             <Link
+              href="/sports"
+              className="transition-colors duration-150 hover:text-foreground"
+            >
+              {t("sports")}
+            </Link>
+            <Link
               href="/#how-it-works"
               className="transition-colors duration-150 hover:text-foreground"
             >

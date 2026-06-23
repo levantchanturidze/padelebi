@@ -25,9 +25,13 @@ export const AMENITIES = [
   "LOCKER_ROOM",
   "PRO_SHOP",
   "CAFE",
-  "RACKET_RENTAL",
+  "BALL_RENTAL",
+  "EQUIPMENT_RENTAL",
   "LIGHTING",
   "WHEELCHAIR_ACCESS",
+  "WIFI",
+  "SAUNA",
+  "WATER_FOUNTAIN",
 ] as const;
 export type Amenity = (typeof AMENITIES)[number];
 
@@ -50,9 +54,13 @@ export const AMENITY_LABELS: Record<Amenity, string> = {
   LOCKER_ROOM: "Locker room",
   PRO_SHOP: "Pro shop",
   CAFE: "Café",
-  RACKET_RENTAL: "Racket rental",
+  BALL_RENTAL: "Ball rental",
+  EQUIPMENT_RENTAL: "Equipment rental",
   LIGHTING: "Floodlights",
   WHEELCHAIR_ACCESS: "Wheelchair access",
+  WIFI: "Wi-Fi",
+  SAUNA: "Sauna",
+  WATER_FOUNTAIN: "Water fountain",
 };
 
 export const WEEKDAY_LABELS = [

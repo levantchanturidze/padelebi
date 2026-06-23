@@ -1,10 +1,12 @@
 {
   "nav": {
-    "findCourts": "კორტების ძიება",
+    "findCourts": "ობიექტების ძიება",
+    "sports": "სპორტი",
     "howItWorks": "როგორ მუშაობს",
     "admin": "ადმინი",
-    "clubDashboard": "კლუბის პანელი",
+    "clubDashboard": "მართვის პანელი",
     "myBookings": "ჩემი ჯავშნები",
+    "favorites": "რჩეულები",
     "signOut": "გასვლა",
     "signIn": "შესვლა",
     "signUp": "რეგისტრაცია"
@@ -71,9 +73,13 @@
       "LOCKER_ROOM": "გამოსაცვლელი",
       "PRO_SHOP": "სპორტული მაღაზია",
       "CAFE": "კაფე",
-      "RACKET_RENTAL": "ჩოგანის გაქირავება",
+      "BALL_RENTAL": "ბურთის გაქირავება",
+      "EQUIPMENT_RENTAL": "ინვენტარის გაქირავება",
       "LIGHTING": "განათება",
-      "WHEELCHAIR_ACCESS": "შეზღუდული შესაძლებლობის მქონე პირთათვის"
+      "WHEELCHAIR_ACCESS": "შეზღუდული შესაძლებლობის მქონე პირთათვის",
+      "WIFI": "Wi-Fi",
+      "SAUNA": "საუნა",
+      "WATER_FOUNTAIN": "სასმელი წყალი"
     },
     "courts": "{count} კორტი",
     "fromPrice": "{price}-დან/სთ"

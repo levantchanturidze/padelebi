@@ -46,6 +46,7 @@ model User {
   venues      Venue[]              @relation("VenueOwner")
   bookings    Booking[]
   reviews     Review[]
+  favorites   Favorite[]
   resetTokens PasswordResetToken[]
 }
 
@@ -68,6 +69,7 @@ model Venue {
   owner      User       @relation("VenueOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   facilities Facility[]
   reviews    Review[]
+  favorites  Favorite[]
 
   @@index([city])
   @@index([status])
@@ -79,7 +81,10 @@ model Facility {
   venueId         String   @map("clubId")
   sportId         String
   name            String
-  surface         String   @default("ARTIFICIAL_GRASS") // padel-only for now; moves to attributes JSON in Phase 2
+  /// Sport-neutral metadata, JSON-encoded. Shape is defined per-sport in lib/sports/<slug>.ts.
+  attributes      String   @default("{}")
+  /// Padel-only legacy field. Padel adapter still writes here for back-compat; dropped in Phase 3.
+  surface         String   @default("ARTIFICIAL_GRASS")
   isIndoor        Boolean  @default(false)
   pricePerHourGEL Int      @default(40)
   isActive        Boolean  @default(true)
@@ -167,4 +172,17 @@ model Review {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([venueId, userId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  venueId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, venueId])
+  @@index([userId])
 }

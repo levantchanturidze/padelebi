@@ -13,14 +13,19 @@ function roleLinks(role: string, t: ReturnType<typeof useTranslations<"nav">>) {
       return [
         { href: "/admin", label: t("admin") },
         { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
       ];
     case "CLUB_ADMIN":
       return [
         { href: "/manager", label: t("clubDashboard") },
         { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
       ];
     default:
-      return [{ href: "/account/bookings", label: t("myBookings") }];
+      return [
+        { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
+      ];
   }
 }
 
@@ -71,6 +76,7 @@ export function MobileMenu({
               {/* Main links */}
               <div className="space-y-1 px-4 py-3">
                 <MobileLink href="/venues">{t("findCourts")}</MobileLink>
+                <MobileLink href="/sports">{t("sports")}</MobileLink>
                 <MobileLink href="/#how-it-works">{t("howItWorks")}</MobileLink>
               </div>
 

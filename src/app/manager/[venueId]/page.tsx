@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { AttributesForm } from "@/components/facility/attributes-form";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { getOwnedVenue } from "@/lib/venue-access";
@@ -22,12 +23,11 @@ import {
 import {
   AMENITIES,
   AMENITY_LABELS,
-  SURFACES,
-  SURFACE_LABELS,
   WEEKDAY_LABELS,
   type Amenity,
 } from "@/lib/enums";
 import { parseJSON, minutesToTime, formatGEL } from "@/lib/utils";
+import { getAdapter, parseAttributes } from "@/lib/sports";
 
 export default async function VenueManagePage({
   params,
@@ -48,6 +48,7 @@ export default async function VenueManagePage({
         facilities: {
           orderBy: { name: "asc" },
           include: {
+            sport: true,
             schedules: true,
             blackouts: { where: { endTime: { gte: new Date() } }, orderBy: { startTime: "asc" } },
           },
@@ -74,12 +75,14 @@ export default async function VenueManagePage({
     { key: "profile", label: t("profileTab") },
     { key: "facilities", label: t("courtsTab") },
   ];
-  // Accept legacy tab name "courts" from any cached links
   const activeTab = tab === "courts" ? "facilities" : tab;
+
+  // Default sport for the "add facility" form
+  const defaultSport = sports.find((s) => s.slug === "padel") ?? sports[0];
+  const defaultAdapter = getAdapter(defaultSport?.slug);
 
   return (
     <DashboardShell title={venue.name} subtitle={`${venue.city} · ${venue.status.toLowerCase()}`} nav={MANAGER_NAV} current="/manager">
-      {/* Back / view public */}
       <div className="mb-5 flex items-center gap-3">
         <Link href="/manager" className="text-sm text-muted hover:text-foreground">{t("back")}</Link>
         {venue.status === "APPROVED" && (
@@ -94,7 +97,6 @@ export default async function VenueManagePage({
         <p className="mb-4 rounded-[var(--radius-md)] bg-red-50 px-4 py-3 text-sm text-danger">{t("saveError")}</p>
       )}
 
-      {/* Tab navigation */}
       <div className="mb-6 flex border-b border-border">
         {tabs.map(({ key, label }) => (
           <Link
@@ -114,51 +116,49 @@ export default async function VenueManagePage({
 
       {/* ── Profile tab ─────────────────────────────────────────── */}
       {activeTab === "profile" && (
-        <>
-          <Card>
-            <CardContent>
-              <h2 className="font-semibold">{t("clubProfile")}</h2>
-              <form action={updateVenueAction} className="mt-4 grid max-w-2xl gap-4 sm:grid-cols-2">
-                <input type="hidden" name="venueId" value={venue.id} />
-                <div className="sm:col-span-2">
-                  <Label htmlFor="name">{t("name")}</Label>
-                  <Input id="name" name="name" defaultValue={venue.name} required />
-                </div>
-                <div>
-                  <Label htmlFor="city">{t("city")}</Label>
-                  <Input id="city" name="city" defaultValue={venue.city} required />
-                </div>
-                <div>
-                  <Label htmlFor="address">{t("address")}</Label>
-                  <Input id="address" name="address" defaultValue={venue.address} required />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label htmlFor="description">{t("description")}</Label>
-                  <Textarea id="description" name="description" defaultValue={venue.description} />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Amenities</Label>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {AMENITIES.map((a) => (
-                      <label key={a} className="flex items-center gap-2 text-sm">
-                        <input type="checkbox" name={`amenity_${a}`} defaultChecked={amenities.includes(a)} className="h-4 w-4 accent-[var(--color-brand-500)]" />
-                        {AMENITY_LABELS[a]}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="sm:col-span-2">
-                  <Button type="submit">{t("saveProfile")}</Button>
-                </div>
-              </form>
-
-              <div className="mt-6 border-t border-border pt-5">
-                <p className="mb-3 text-sm font-medium">{tp("clubPhotos")}</p>
-                <PhotoUploader kind="venue" entityId={venue.id} initial={venuePhotos} />
+        <Card>
+          <CardContent>
+            <h2 className="font-semibold">{t("clubProfile")}</h2>
+            <form action={updateVenueAction} className="mt-4 grid max-w-2xl gap-4 sm:grid-cols-2">
+              <input type="hidden" name="venueId" value={venue.id} />
+              <div className="sm:col-span-2">
+                <Label htmlFor="name">{t("name")}</Label>
+                <Input id="name" name="name" defaultValue={venue.name} required />
               </div>
-            </CardContent>
-          </Card>
-        </>
+              <div>
+                <Label htmlFor="city">{t("city")}</Label>
+                <Input id="city" name="city" defaultValue={venue.city} required />
+              </div>
+              <div>
+                <Label htmlFor="address">{t("address")}</Label>
+                <Input id="address" name="address" defaultValue={venue.address} required />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="description">{t("description")}</Label>
+                <Textarea id="description" name="description" defaultValue={venue.description} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Amenities</Label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {AMENITIES.map((a) => (
+                    <label key={a} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" name={`amenity_${a}`} defaultChecked={amenities.includes(a)} className="h-4 w-4 accent-[var(--color-brand-500)]" />
+                      {AMENITY_LABELS[a]}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <Button type="submit">{t("saveProfile")}</Button>
+              </div>
+            </form>
+
+            <div className="mt-6 border-t border-border pt-5">
+              <p className="mb-3 text-sm font-medium">{tp("clubPhotos")}</p>
+              <PhotoUploader kind="venue" entityId={venue.id} initial={venuePhotos} />
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Facilities tab ──────────────────────────────────────── */}
@@ -170,6 +170,8 @@ export default async function VenueManagePage({
 
           <div className="space-y-4">
             {venue.facilities.map((facility) => {
+              const adapter = getAdapter(facility.sport.slug);
+              const attrs = parseAttributes(facility.sport.slug, facility.attributes);
               const openDays = new Set(facility.schedules.map((s) => s.dayOfWeek));
               const sample = facility.schedules[0];
               return (
@@ -179,19 +181,13 @@ export default async function VenueManagePage({
                     <form action={updateFacilityAction} className="grid gap-3 sm:grid-cols-2">
                       <input type="hidden" name="facilityId" value={facility.id} />
                       <div>
-                        <Label>{t("courtName")}</Label>
+                        <Label>{adapter.facilityNoun.singular === "court" ? t("courtName") : `${adapter.facilityNoun.singular[0].toUpperCase()}${adapter.facilityNoun.singular.slice(1)} name`}</Label>
                         <Input name="name" defaultValue={facility.name} required />
                       </div>
                       <div>
                         <Label>Sport</Label>
                         <Select name="sportId" defaultValue={facility.sportId}>
                           {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>{t("surface")}</Label>
-                        <Select name="surface" defaultValue={facility.surface}>
-                          {SURFACES.map((s) => <option key={s} value={s}>{SURFACE_LABELS[s]}</option>)}
                         </Select>
                       </div>
                       <div>
@@ -208,6 +204,15 @@ export default async function VenueManagePage({
                           {t("activeLabel")}
                         </label>
                       </div>
+
+                      {/* Sport-specific attributes via adapter */}
+                      <div className="sm:col-span-2">
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                          {facility.sport.name} details
+                        </p>
+                        <AttributesForm fields={adapter.formFields} initial={attrs} />
+                      </div>
+
                       <div className="sm:col-span-2">
                         <Button type="submit" size="sm">{t("saveCourt")}</Button>
                       </div>
@@ -229,7 +234,7 @@ export default async function VenueManagePage({
                           </div>
                           <div>
                             <Label>{t("slotLength")}</Label>
-                            <Select name="slotMinutes" defaultValue={String(sample?.slotMinutes ?? 90)} className="w-32">
+                            <Select name="slotMinutes" defaultValue={String(sample?.slotMinutes ?? adapter.defaults.slotMinutes)} className="w-32">
                               <option value="60">{t("min60")}</option>
                               <option value="90">{t("min90")}</option>
                               <option value="120">{t("min120")}</option>
@@ -320,19 +325,13 @@ export default async function VenueManagePage({
                 </div>
                 <div>
                   <Label>Sport</Label>
-                  <Select name="sportId" defaultValue="sport_padel">
+                  <Select name="sportId" defaultValue={defaultSport?.id}>
                     {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("surface")}</Label>
-                  <Select name="surface" defaultValue="ARTIFICIAL_GRASS">
-                    {SURFACES.map((s) => <option key={s} value={s}>{SURFACE_LABELS[s]}</option>)}
-                  </Select>
-                </div>
-                <div>
                   <Label>{t("pricePerHour")}</Label>
-                  <Input name="pricePerHourGEL" type="number" min={0} defaultValue={50} required />
+                  <Input name="pricePerHourGEL" type="number" min={0} defaultValue={defaultAdapter.defaults.pricePerHourGEL} required />
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 text-sm">
@@ -340,6 +339,15 @@ export default async function VenueManagePage({
                     {t("indoorLabel")}
                   </label>
                 </div>
+
+                {/* Default-sport attribute defaults; manager can change sport above then edit on the edit form */}
+                <div className="sm:col-span-2">
+                  <AttributesForm
+                    fields={defaultAdapter.formFields}
+                    initial={defaultAdapter.defaults.attributes}
+                  />
+                </div>
+
                 <div className="sm:col-span-2">
                   <Button type="submit">{t("addCourtBtn")}</Button>
                 </div>

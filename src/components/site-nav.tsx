@@ -9,14 +9,19 @@ function linksForRole(role: string, t: ReturnType<typeof useTranslations<"nav">>
       return [
         { href: "/admin", label: t("admin") },
         { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
       ];
     case "CLUB_ADMIN":
       return [
         { href: "/manager", label: t("clubDashboard") },
         { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
       ];
     default:
-      return [{ href: "/account/bookings", label: t("myBookings") }];
+      return [
+        { href: "/account/bookings", label: t("myBookings") },
+        { href: "/account/favorites", label: t("favorites") },
+      ];
   }
 }
 

@@ -1,10 +1,12 @@
 {
   "nav": {
-    "findCourts": "Find courts",
+    "findCourts": "Find venues",
+    "sports": "Sports",
     "howItWorks": "How it works",
     "admin": "Admin",
-    "clubDashboard": "Club dashboard",
+    "clubDashboard": "Manager",
     "myBookings": "My bookings",
+    "favorites": "Favorites",
     "signOut": "Sign out",
     "signIn": "Sign in",
     "signUp": "Sign up"
@@ -71,9 +73,13 @@
       "LOCKER_ROOM": "Locker room",
       "PRO_SHOP": "Pro shop",
       "CAFE": "Café",
-      "RACKET_RENTAL": "Racket rental",
+      "BALL_RENTAL": "Ball rental",
+      "EQUIPMENT_RENTAL": "Equipment rental",
       "LIGHTING": "Floodlights",
-      "WHEELCHAIR_ACCESS": "Wheelchair access"
+      "WHEELCHAIR_ACCESS": "Wheelchair access",
+      "WIFI": "Wi-Fi",
+      "SAUNA": "Sauna",
+      "WATER_FOUNTAIN": "Water fountain"
     },
     "courts": "{count} courts",
     "fromPrice": "from {price}/hr"

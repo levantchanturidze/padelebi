@@ -6,8 +6,9 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { getOwnedVenue, uniqueVenueSlug } from "@/lib/venue-access";
-import { SURFACES, AMENITIES } from "@/lib/enums";
+import { AMENITIES } from "@/lib/enums";
 import { timeToMinutes } from "@/lib/utils";
+import { getAdapter } from "@/lib/sports";
 
 const MANAGER_ROLES = ["CLUB_ADMIN", "PLATFORM_ADMIN"] as const;
 
@@ -87,38 +88,76 @@ export async function updateFacilityPhotosAction(formData: FormData) {
 
 /* ----------------------------- Facilities ----------------------------- */
 
-const facilitySchema = z.object({
+const baseFacilitySchema = z.object({
   name: z.string().min(1),
   sportId: z.string().min(1),
-  surface: z.enum(SURFACES),
   isIndoor: z.boolean(),
   pricePerHourGEL: z.number().int().min(0).max(100000),
 });
+
+/**
+ * Read sport-specific `attr_*` fields out of FormData and let the adapter
+ * validate them. Returns the parsed attributes object and — for legacy padel
+ * back-compat — the surface string to mirror onto the dedicated column.
+ */
+async function parseAttributesFromForm(formData: FormData, sportId: string) {
+  const sport = await prisma.sport.findUnique({ where: { id: sportId } });
+  const adapter = getAdapter(sport?.slug);
+
+  const raw: Record<string, unknown> = {};
+  for (const field of adapter.formFields) {
+    const value = formData.get(`attr_${field.name}`);
+    if (field.kind === "boolean") {
+      raw[field.name] = value === "on";
+    } else if (field.kind === "number") {
+      const n = Number(value);
+      raw[field.name] = Number.isFinite(n) ? n : undefined;
+    } else if (value !== null && value !== "") {
+      raw[field.name] = String(value);
+    }
+  }
+
+  const parsed = adapter.attributesSchema.parse(raw);
+  const surfaceLegacy =
+    typeof (parsed as { surface?: unknown }).surface === "string"
+      ? (parsed as { surface: string }).surface
+      : "ARTIFICIAL_GRASS";
+
+  return { attributes: parsed as Record<string, unknown>, surfaceLegacy };
+}
 
 export async function createFacilityAction(formData: FormData) {
   const user = await requireRole([...MANAGER_ROLES], "/manager");
   const venueId = String(formData.get("venueId"));
   if (!(await getOwnedVenue(venueId, user))) redirect("/manager");
 
-  const data = facilitySchema.parse({
+  const base = baseFacilitySchema.parse({
     name: formData.get("name"),
     sportId: formData.get("sportId") ?? "sport_padel",
-    surface: formData.get("surface"),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
   });
+  const { attributes, surfaceLegacy } = await parseAttributesFromForm(formData, base.sportId);
 
-  // New facility defaults to open every day 08:00–22:00, 90-min slots.
+  const sport = await prisma.sport.findUnique({ where: { id: base.sportId } });
+  const adapter = getAdapter(sport?.slug);
+  const slotMinutes = adapter.defaults.slotMinutes;
+
   await prisma.facility.create({
     data: {
       venueId,
-      ...data,
+      sportId: base.sportId,
+      name: base.name,
+      isIndoor: base.isIndoor,
+      pricePerHourGEL: base.pricePerHourGEL,
+      attributes: JSON.stringify(attributes),
+      surface: surfaceLegacy,
       schedules: {
         create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
           dayOfWeek,
           openMinutes: 8 * 60,
           closeMinutes: 22 * 60,
-          slotMinutes: 90,
+          slotMinutes,
         })),
       },
     },
@@ -133,16 +172,22 @@ export async function updateFacilityAction(formData: FormData) {
   const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
   if (!facility || !(await getOwnedVenue(facility.venueId, user))) redirect("/manager");
 
-  const data = facilitySchema.parse({
+  const base = baseFacilitySchema.parse({
     name: formData.get("name"),
     sportId: formData.get("sportId") ?? facility.sportId,
-    surface: formData.get("surface"),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
   });
+  const { attributes, surfaceLegacy } = await parseAttributesFromForm(formData, base.sportId);
+
   await prisma.facility.update({
     where: { id: facilityId },
-    data: { ...data, isActive: formData.get("isActive") === "on" },
+    data: {
+      ...base,
+      attributes: JSON.stringify(attributes),
+      surface: surfaceLegacy,
+      isActive: formData.get("isActive") === "on",
+    },
   });
   revalidatePath(`/manager/${facility.venueId}`);
   redirect(`/manager/${facility.venueId}?saved=1&tab=facilities`);
