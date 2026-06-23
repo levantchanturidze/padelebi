@@ -9,6 +9,8 @@ import type { Amenity } from "@/lib/enums";
  * UI code should never branch on `sport.slug` directly; it should ask the
  * adapter (`getAdapter(slug)`) for what to render.
  */
+export type BookingModel = "TIME_SLOT" | "CLASS" | "DROP_IN";
+
 export type SportAdapter<TAttributes = Record<string, unknown>> = {
   /** Lower-case identifier matching Sport.slug in the DB. */
   slug: string;
@@ -23,6 +25,8 @@ export type SportAdapter<TAttributes = Record<string, unknown>> = {
   defaults: {
     slotMinutes: 60 | 90 | 120;
     pricePerHourGEL: number;
+    bookingModel: BookingModel;
+    capacity: number;
     attributes: TAttributes;
   };
 

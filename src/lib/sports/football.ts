@@ -30,6 +30,8 @@ export const footballAdapter: SportAdapter<FootballAttributes> = {
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 80,
+    bookingModel: "TIME_SLOT",
+    capacity: 1,
     attributes: { pitchSize: "FIVE", grassType: "ARTIFICIAL", lighting: false },
   },
   allowedAmenities: [

@@ -83,8 +83,10 @@ model Facility {
   name            String
   /// Sport-neutral metadata, JSON-encoded. Shape is defined per-sport in lib/sports/<slug>.ts.
   attributes      String   @default("{}")
-  /// Padel-only legacy field. Padel adapter still writes here for back-compat; dropped in Phase 3.
-  surface         String   @default("ARTIFICIAL_GRASS")
+  /// How this facility is booked: TIME_SLOT (courts/pitches), CLASS (group sessions), DROP_IN (day pass).
+  bookingModel    String   @default("TIME_SLOT")
+  /// Max simultaneous attendees: 1 for a court, N for a class, large for a gym.
+  capacity        Int      @default(1)
   isIndoor        Boolean  @default(false)
   pricePerHourGEL Int      @default(40)
   isActive        Boolean  @default(true)
@@ -96,10 +98,31 @@ model Facility {
   schedules FacilitySchedule[]
   bookings  Booking[]
   blackouts Blackout[]
+  classes   ClassSession[]
 
   @@index([venueId])
   @@index([sportId, isActive])
   @@map("Court")
+}
+
+/// A scheduled group session on a CLASS-mode facility. Each session has its
+/// own capacity, time and price; bookings reference the session, not raw time.
+model ClassSession {
+  id          String   @id @default(cuid())
+  facilityId  String
+  title       String
+  startTime   DateTime
+  endTime     DateTime
+  capacity    Int
+  priceGEL    Int
+  instructor  String?
+  isCancelled Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  facility Facility  @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([facilityId, startTime])
 }
 
 // Weekly availability template per facility used to generate bookable slots.
@@ -118,22 +141,28 @@ model FacilitySchedule {
 }
 
 model Booking {
-  id            String   @id @default(cuid())
-  facilityId    String   @map("courtId")
-  userId        String
-  startTime     DateTime
-  endTime       DateTime
-  priceGEL      Int
-  status        String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
-  paymentStatus String   @default("UNPAID") // UNPAID | PAID | REFUNDED
-  notes         String?
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  facilityId     String   @map("courtId")
+  userId         String
+  /// Populated only when bookingModel = CLASS — the booked session.
+  classSessionId String?
+  /// Number of attendees this booking covers (e.g. booking 2 seats in a class). Default 1.
+  attendees      Int      @default(1)
+  startTime      DateTime
+  endTime        DateTime
+  priceGEL       Int
+  status         String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
+  paymentStatus  String   @default("UNPAID") // UNPAID | PAID | REFUNDED
+  notes          String?
+  createdAt      DateTime @default(now())
 
-  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility     Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classSession ClassSession? @relation(fields: [classSessionId], references: [id])
 
   @@index([facilityId, startTime])
   @@index([userId])
+  @@index([classSessionId])
 }
 
 // Time ranges blocked from booking (maintenance, private events).

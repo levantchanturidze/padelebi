@@ -88,17 +88,20 @@ export async function updateFacilityPhotosAction(formData: FormData) {
 
 /* ----------------------------- Facilities ----------------------------- */
 
+const BOOKING_MODELS = ["TIME_SLOT", "CLASS", "DROP_IN"] as const;
+
 const baseFacilitySchema = z.object({
   name: z.string().min(1),
   sportId: z.string().min(1),
+  bookingModel: z.enum(BOOKING_MODELS),
+  capacity: z.number().int().min(1).max(10000),
   isIndoor: z.boolean(),
   pricePerHourGEL: z.number().int().min(0).max(100000),
 });
 
 /**
  * Read sport-specific `attr_*` fields out of FormData and let the adapter
- * validate them. Returns the parsed attributes object and — for legacy padel
- * back-compat — the surface string to mirror onto the dedicated column.
+ * validate them.
  */
 async function parseAttributesFromForm(formData: FormData, sportId: string) {
   const sport = await prisma.sport.findUnique({ where: { id: sportId } });
@@ -117,13 +120,7 @@ async function parseAttributesFromForm(formData: FormData, sportId: string) {
     }
   }
 
-  const parsed = adapter.attributesSchema.parse(raw);
-  const surfaceLegacy =
-    typeof (parsed as { surface?: unknown }).surface === "string"
-      ? (parsed as { surface: string }).surface
-      : "ARTIFICIAL_GRASS";
-
-  return { attributes: parsed as Record<string, unknown>, surfaceLegacy };
+  return adapter.attributesSchema.parse(raw) as Record<string, unknown>;
 }
 
 export async function createFacilityAction(formData: FormData) {
@@ -131,35 +128,43 @@ export async function createFacilityAction(formData: FormData) {
   const venueId = String(formData.get("venueId"));
   if (!(await getOwnedVenue(venueId, user))) redirect("/manager");
 
+  const sportIdRaw = String(formData.get("sportId") ?? "sport_padel");
+  const sport = await prisma.sport.findUnique({ where: { id: sportIdRaw } });
+  const adapter = getAdapter(sport?.slug);
+
   const base = baseFacilitySchema.parse({
     name: formData.get("name"),
-    sportId: formData.get("sportId") ?? "sport_padel",
+    sportId: sportIdRaw,
+    bookingModel: String(formData.get("bookingModel") ?? adapter.defaults.bookingModel),
+    capacity: Number(formData.get("capacity") ?? adapter.defaults.capacity),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
   });
-  const { attributes, surfaceLegacy } = await parseAttributesFromForm(formData, base.sportId);
-
-  const sport = await prisma.sport.findUnique({ where: { id: base.sportId } });
-  const adapter = getAdapter(sport?.slug);
-  const slotMinutes = adapter.defaults.slotMinutes;
+  const attributes = await parseAttributesFromForm(formData, base.sportId);
 
   await prisma.facility.create({
     data: {
       venueId,
       sportId: base.sportId,
       name: base.name,
+      bookingModel: base.bookingModel,
+      capacity: base.capacity,
       isIndoor: base.isIndoor,
       pricePerHourGEL: base.pricePerHourGEL,
       attributes: JSON.stringify(attributes),
-      surface: surfaceLegacy,
-      schedules: {
-        create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
-          dayOfWeek,
-          openMinutes: 8 * 60,
-          closeMinutes: 22 * 60,
-          slotMinutes,
-        })),
-      },
+      // TIME_SLOT facilities get a default open-every-day schedule; CLASS/DROP_IN don't need slot grids.
+      ...(base.bookingModel === "TIME_SLOT"
+        ? {
+            schedules: {
+              create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
+                dayOfWeek,
+                openMinutes: 8 * 60,
+                closeMinutes: 22 * 60,
+                slotMinutes: adapter.defaults.slotMinutes,
+              })),
+            },
+          }
+        : {}),
     },
   });
   revalidatePath(`/manager/${venueId}`);
@@ -172,20 +177,23 @@ export async function updateFacilityAction(formData: FormData) {
   const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
   if (!facility || !(await getOwnedVenue(facility.venueId, user))) redirect("/manager");
 
+  const sportIdRaw = String(formData.get("sportId") ?? facility.sportId);
+
   const base = baseFacilitySchema.parse({
     name: formData.get("name"),
-    sportId: formData.get("sportId") ?? facility.sportId,
+    sportId: sportIdRaw,
+    bookingModel: String(formData.get("bookingModel") ?? facility.bookingModel),
+    capacity: Number(formData.get("capacity") ?? facility.capacity),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
   });
-  const { attributes, surfaceLegacy } = await parseAttributesFromForm(formData, base.sportId);
+  const attributes = await parseAttributesFromForm(formData, base.sportId);
 
   await prisma.facility.update({
     where: { id: facilityId },
     data: {
       ...base,
       attributes: JSON.stringify(attributes),
-      surface: surfaceLegacy,
       isActive: formData.get("isActive") === "on",
     },
   });

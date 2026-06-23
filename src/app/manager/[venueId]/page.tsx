@@ -20,6 +20,7 @@ import {
   createBlackoutAction,
   deleteBlackoutAction,
 } from "@/app/actions/venue";
+import { createClassSessionAction, cancelClassSessionAction } from "@/app/actions/class-session";
 import {
   AMENITIES,
   AMENITY_LABELS,
@@ -28,6 +29,12 @@ import {
 } from "@/lib/enums";
 import { parseJSON, minutesToTime, formatGEL } from "@/lib/utils";
 import { getAdapter, parseAttributes } from "@/lib/sports";
+
+const BOOKING_MODEL_LABELS: Record<string, string> = {
+  TIME_SLOT: "Time slot (court / pitch)",
+  CLASS: "Class session (group)",
+  DROP_IN: "Day pass (drop-in)",
+};
 
 export default async function VenueManagePage({
   params,
@@ -51,6 +58,11 @@ export default async function VenueManagePage({
             sport: true,
             schedules: true,
             blackouts: { where: { endTime: { gte: new Date() } }, orderBy: { startTime: "asc" } },
+            classes: {
+              where: { isCancelled: false, endTime: { gte: new Date() } },
+              orderBy: { startTime: "asc" },
+              include: { _count: { select: { bookings: { where: { status: { not: "CANCELLED" } } } } } },
+            },
           },
         },
       },
@@ -77,7 +89,6 @@ export default async function VenueManagePage({
   ];
   const activeTab = tab === "courts" ? "facilities" : tab;
 
-  // Default sport for the "add facility" form
   const defaultSport = sports.find((s) => s.slug === "padel") ?? sports[0];
   const defaultAdapter = getAdapter(defaultSport?.slug);
 
@@ -174,6 +185,10 @@ export default async function VenueManagePage({
               const attrs = parseAttributes(facility.sport.slug, facility.attributes);
               const openDays = new Set(facility.schedules.map((s) => s.dayOfWeek));
               const sample = facility.schedules[0];
+              const isTimeSlot = facility.bookingModel === "TIME_SLOT";
+              const isClass = facility.bookingModel === "CLASS";
+              const isDropIn = facility.bookingModel === "DROP_IN";
+
               return (
                 <Card key={facility.id}>
                   <CardContent className="space-y-5">
@@ -181,7 +196,7 @@ export default async function VenueManagePage({
                     <form action={updateFacilityAction} className="grid gap-3 sm:grid-cols-2">
                       <input type="hidden" name="facilityId" value={facility.id} />
                       <div>
-                        <Label>{adapter.facilityNoun.singular === "court" ? t("courtName") : `${adapter.facilityNoun.singular[0].toUpperCase()}${adapter.facilityNoun.singular.slice(1)} name`}</Label>
+                        <Label>{adapter.facilityNoun.singular[0].toUpperCase() + adapter.facilityNoun.singular.slice(1)} name</Label>
                         <Input name="name" defaultValue={facility.name} required />
                       </div>
                       <div>
@@ -191,7 +206,19 @@ export default async function VenueManagePage({
                         </Select>
                       </div>
                       <div>
-                        <Label>{t("pricePerHour")}</Label>
+                        <Label>Booking model</Label>
+                        <Select name="bookingModel" defaultValue={facility.bookingModel}>
+                          {Object.entries(BOOKING_MODEL_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>{v}</option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Capacity</Label>
+                        <Input name="capacity" type="number" min={1} max={10000} defaultValue={facility.capacity} required />
+                      </div>
+                      <div>
+                        <Label>{isDropIn ? "Day-pass price (GEL)" : isClass ? "Default class price (GEL)" : t("pricePerHour")}</Label>
                         <Input name="pricePerHourGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
                       </div>
                       <div className="flex items-end gap-6">
@@ -205,7 +232,6 @@ export default async function VenueManagePage({
                         </label>
                       </div>
 
-                      {/* Sport-specific attributes via adapter */}
                       <div className="sm:col-span-2">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
                           {facility.sport.name} details
@@ -218,77 +244,149 @@ export default async function VenueManagePage({
                       </div>
                     </form>
 
-                    {/* Schedule */}
-                    <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
-                      <h3 className="text-sm font-semibold">{t("schedule")}</h3>
-                      <form action={updateScheduleAction} className="mt-3 space-y-3">
-                        <input type="hidden" name="facilityId" value={facility.id} />
-                        <div className="flex flex-wrap gap-4">
-                          <div>
-                            <Label>{t("opens")}</Label>
-                            <Input name="open" type="time" defaultValue={minutesToTime(sample?.openMinutes ?? 480)} className="w-32" />
+                    {/* Schedule — only for TIME_SLOT */}
+                    {isTimeSlot && (
+                      <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
+                        <h3 className="text-sm font-semibold">{t("schedule")}</h3>
+                        <form action={updateScheduleAction} className="mt-3 space-y-3">
+                          <input type="hidden" name="facilityId" value={facility.id} />
+                          <div className="flex flex-wrap gap-4">
+                            <div>
+                              <Label>{t("opens")}</Label>
+                              <Input name="open" type="time" defaultValue={minutesToTime(sample?.openMinutes ?? 480)} className="w-32" />
+                            </div>
+                            <div>
+                              <Label>{t("closes")}</Label>
+                              <Input name="close" type="time" defaultValue={minutesToTime(sample?.closeMinutes ?? 1320)} className="w-32" />
+                            </div>
+                            <div>
+                              <Label>{t("slotLength")}</Label>
+                              <Select name="slotMinutes" defaultValue={String(sample?.slotMinutes ?? adapter.defaults.slotMinutes)} className="w-32">
+                                <option value="60">{t("min60")}</option>
+                                <option value="90">{t("min90")}</option>
+                                <option value="120">{t("min120")}</option>
+                              </Select>
+                            </div>
                           </div>
-                          <div>
-                            <Label>{t("closes")}</Label>
-                            <Input name="close" type="time" defaultValue={minutesToTime(sample?.closeMinutes ?? 1320)} className="w-32" />
+                          <div className="flex flex-wrap gap-3">
+                            {WEEKDAY_LABELS.map((label, d) => (
+                              <label key={d} className="flex items-center gap-1.5 text-sm">
+                                <input type="checkbox" name={`day_${d}`} defaultChecked={openDays.size ? openDays.has(d) : true} className="h-4 w-4 accent-[var(--color-brand-500)]" />
+                                {label.slice(0, 3)}
+                              </label>
+                            ))}
                           </div>
-                          <div>
-                            <Label>{t("slotLength")}</Label>
-                            <Select name="slotMinutes" defaultValue={String(sample?.slotMinutes ?? adapter.defaults.slotMinutes)} className="w-32">
-                              <option value="60">{t("min60")}</option>
-                              <option value="90">{t("min90")}</option>
-                              <option value="120">{t("min120")}</option>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                          {WEEKDAY_LABELS.map((label, d) => (
-                            <label key={d} className="flex items-center gap-1.5 text-sm">
-                              <input type="checkbox" name={`day_${d}`} defaultChecked={openDays.size ? openDays.has(d) : true} className="h-4 w-4 accent-[var(--color-brand-500)]" />
-                              {label.slice(0, 3)}
-                            </label>
-                          ))}
-                        </div>
-                        <Button type="submit" size="sm" variant="outline">{t("saveSchedule")}</Button>
-                      </form>
-                    </div>
+                          <Button type="submit" size="sm" variant="outline">{t("saveSchedule")}</Button>
+                        </form>
+                      </div>
+                    )}
 
-                    {/* Blackouts */}
-                    <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
-                      <h3 className="text-sm font-semibold">{t("blackouts")}</h3>
-                      {facility.blackouts.length > 0 && (
-                        <ul className="mt-2 space-y-1 text-sm">
-                          {facility.blackouts.map((bl) => (
-                            <li key={bl.id} className="flex items-center justify-between">
-                              <span>
-                                {format(bl.startTime, "d MMM HH:mm")}–{format(bl.endTime, "HH:mm")}
-                                {bl.reason ? ` · ${bl.reason}` : ""}
-                              </span>
-                              <form action={deleteBlackoutAction}>
-                                <input type="hidden" name="blackoutId" value={bl.id} />
-                                <button className="text-danger hover:underline" type="submit">{t("remove")}</button>
-                              </form>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <form action={createBlackoutAction} className="mt-3 flex flex-wrap items-end gap-3">
-                        <input type="hidden" name="facilityId" value={facility.id} />
-                        <div>
-                          <Label>{t("start")}</Label>
-                          <Input name="start" type="datetime-local" defaultValue={nowLocal} />
-                        </div>
-                        <div>
-                          <Label>{t("end")}</Label>
-                          <Input name="end" type="datetime-local" defaultValue={nowLocal} />
-                        </div>
-                        <div>
-                          <Label>{t("reason")}</Label>
-                          <Input name="reason" placeholder={t("maintenance")} />
-                        </div>
-                        <Button type="submit" size="sm" variant="outline">{t("addBlackout")}</Button>
-                      </form>
-                    </div>
+                    {/* Class sessions — only for CLASS */}
+                    {isClass && (
+                      <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
+                        <h3 className="text-sm font-semibold">Upcoming classes</h3>
+                        {facility.classes.length === 0 ? (
+                          <p className="mt-2 text-sm text-muted">No upcoming sessions. Add one below.</p>
+                        ) : (
+                          <ul className="mt-2 space-y-1.5 text-sm">
+                            {facility.classes.map((cs) => (
+                              <li key={cs.id} className="flex items-center justify-between gap-2">
+                                <span>
+                                  <span className="font-medium">{cs.title}</span>{" "}
+                                  · {format(cs.startTime, "EEE d MMM, HH:mm")}–{format(cs.endTime, "HH:mm")}
+                                  {cs.instructor ? <> · {cs.instructor}</> : null}
+                                  {" "}· {cs._count.bookings}/{cs.capacity} booked
+                                  {" "}· {formatGEL(cs.priceGEL)}
+                                </span>
+                                <form action={cancelClassSessionAction}>
+                                  <input type="hidden" name="sessionId" value={cs.id} />
+                                  <button className="text-danger hover:underline" type="submit">Cancel</button>
+                                </form>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        <form action={createClassSessionAction} className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <input type="hidden" name="facilityId" value={facility.id} />
+                          <div className="sm:col-span-2">
+                            <Label>Session title</Label>
+                            <Input name="title" placeholder="Morning HIIT" required />
+                          </div>
+                          <div>
+                            <Label>Start</Label>
+                            <Input name="startTime" type="datetime-local" defaultValue={nowLocal} required />
+                          </div>
+                          <div>
+                            <Label>End</Label>
+                            <Input name="endTime" type="datetime-local" defaultValue={nowLocal} required />
+                          </div>
+                          <div>
+                            <Label>Capacity</Label>
+                            <Input name="capacity" type="number" min={1} max={500} defaultValue={facility.capacity} required />
+                          </div>
+                          <div>
+                            <Label>Price per seat (GEL)</Label>
+                            <Input name="priceGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <Label>Instructor (optional)</Label>
+                            <Input name="instructor" placeholder="Anna T." />
+                          </div>
+                          <div className="sm:col-span-2">
+                            <Button type="submit" size="sm" variant="outline">Add session</Button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {/* Drop-in info — only for DROP_IN */}
+                    {isDropIn && (
+                      <div className="rounded-[var(--radius-md)] border border-border bg-background p-4 text-sm text-muted">
+                        Drop-in facilities sell day passes. Players buy a pass for a given day
+                        — there&apos;s no schedule grid. Set venue opening hours under the profile tab,
+                        and define daily capacity above.
+                      </div>
+                    )}
+
+                    {/* Blackouts — only for TIME_SLOT (CLASS uses cancel-session; DROP_IN doesn't need it) */}
+                    {isTimeSlot && (
+                      <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
+                        <h3 className="text-sm font-semibold">{t("blackouts")}</h3>
+                        {facility.blackouts.length > 0 && (
+                          <ul className="mt-2 space-y-1 text-sm">
+                            {facility.blackouts.map((bl) => (
+                              <li key={bl.id} className="flex items-center justify-between">
+                                <span>
+                                  {format(bl.startTime, "d MMM HH:mm")}–{format(bl.endTime, "HH:mm")}
+                                  {bl.reason ? ` · ${bl.reason}` : ""}
+                                </span>
+                                <form action={deleteBlackoutAction}>
+                                  <input type="hidden" name="blackoutId" value={bl.id} />
+                                  <button className="text-danger hover:underline" type="submit">{t("remove")}</button>
+                                </form>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <form action={createBlackoutAction} className="mt-3 flex flex-wrap items-end gap-3">
+                          <input type="hidden" name="facilityId" value={facility.id} />
+                          <div>
+                            <Label>{t("start")}</Label>
+                            <Input name="start" type="datetime-local" defaultValue={nowLocal} />
+                          </div>
+                          <div>
+                            <Label>{t("end")}</Label>
+                            <Input name="end" type="datetime-local" defaultValue={nowLocal} />
+                          </div>
+                          <div>
+                            <Label>{t("reason")}</Label>
+                            <Input name="reason" placeholder={t("maintenance")} />
+                          </div>
+                          <Button type="submit" size="sm" variant="outline">{t("addBlackout")}</Button>
+                        </form>
+                      </div>
+                    )}
 
                     {/* Facility photos */}
                     <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
@@ -299,8 +397,7 @@ export default async function VenueManagePage({
                     {/* Delete */}
                     <div className="flex items-center justify-between border-t border-border pt-3">
                       <span className="text-sm text-muted">
-                        {facility.isActive ? t("activeLabel") : "Inactive"} · {formatGEL(facility.pricePerHourGEL)}/hr
-                        {facility.isIndoor ? ` · ${t("indoorLabel")}` : ""}
+                        {facility.isActive ? t("activeLabel") : "Inactive"} · {BOOKING_MODEL_LABELS[facility.bookingModel]} · {formatGEL(facility.pricePerHourGEL)}
                       </span>
                       <form action={deleteFacilityAction}>
                         <input type="hidden" name="facilityId" value={facility.id} />
@@ -320,7 +417,7 @@ export default async function VenueManagePage({
               <form action={createFacilityAction} className="grid max-w-xl gap-3 sm:grid-cols-2">
                 <input type="hidden" name="venueId" value={venue.id} />
                 <div>
-                  <Label>{t("courtName")}</Label>
+                  <Label>Name</Label>
                   <Input name="name" placeholder={t("courtPlaceholder")} required />
                 </div>
                 <div>
@@ -330,7 +427,19 @@ export default async function VenueManagePage({
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("pricePerHour")}</Label>
+                  <Label>Booking model</Label>
+                  <Select name="bookingModel" defaultValue={defaultAdapter.defaults.bookingModel}>
+                    {Object.entries(BOOKING_MODEL_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>{v}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Capacity</Label>
+                  <Input name="capacity" type="number" min={1} defaultValue={defaultAdapter.defaults.capacity} required />
+                </div>
+                <div>
+                  <Label>Price (GEL)</Label>
                   <Input name="pricePerHourGEL" type="number" min={0} defaultValue={defaultAdapter.defaults.pricePerHourGEL} required />
                 </div>
                 <div className="flex items-end">
@@ -340,7 +449,6 @@ export default async function VenueManagePage({
                   </label>
                 </div>
 
-                {/* Default-sport attribute defaults; manager can change sport above then edit on the edit form */}
                 <div className="sm:col-span-2">
                   <AttributesForm
                     fields={defaultAdapter.formFields}

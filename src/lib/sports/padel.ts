@@ -22,6 +22,8 @@ export const padelAdapter: SportAdapter<PadelAttributes> = {
   defaults: {
     slotMinutes: 90,
     pricePerHourGEL: 60,
+    bookingModel: "TIME_SLOT",
+    capacity: 1,
     attributes: { surface: "ARTIFICIAL_GRASS", isPanoramic: false },
   },
   allowedAmenities: [

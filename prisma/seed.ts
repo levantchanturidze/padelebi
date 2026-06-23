@@ -36,7 +36,9 @@ async function main() {
   await prisma.booking.deleteMany();
   await prisma.blackout.deleteMany();
   await prisma.facilitySchedule.deleteMany();
+  await prisma.classSession.deleteMany();
   await prisma.review.deleteMany();
+  await prisma.favorite.deleteMany();
   await prisma.facility.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.user.deleteMany();
@@ -153,7 +155,7 @@ async function main() {
     },
   });
 
-  // Facilities (padel courts) + schedules
+  // Padel courts (TIME_SLOT) on venue1 + venue2
   const facilitySpecs = [
     { venue: venue1, name: "Court 1 — Panoramic", surface: "PANORAMIC", indoor: false, price: 60 },
     { venue: venue1, name: "Court 2 — Indoor", surface: "ARTIFICIAL_GRASS", indoor: true, price: 70 },
@@ -167,13 +169,106 @@ async function main() {
         venueId: spec.venue.id,
         sportId: "sport_padel",
         name: spec.name,
-        surface: spec.surface,
+        attributes: JSON.stringify({ surface: spec.surface, isPanoramic: spec.surface === "PANORAMIC" }),
+        bookingModel: "TIME_SLOT",
+        capacity: 1,
         isIndoor: spec.indoor,
         pricePerHourGEL: spec.price,
         schedules: { create: fullWeekSchedule() },
       },
     });
     facilities.push(facility);
+  }
+
+  // Gym venue — DROP_IN day pass
+  const gymVenue = await prisma.venue.create({
+    data: {
+      name: "Iron & Oak Gym",
+      slug: "iron-and-oak-gym",
+      description: "24/7 strength and conditioning gym in Saburtalo. Day passes and memberships.",
+      address: "12 Pekini Ave",
+      city: "Tbilisi",
+      lat: 41.726,
+      lng: 44.748,
+      photos: JSON.stringify([
+        "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=1200",
+      ]),
+      amenities: JSON.stringify(["PARKING", "SHOWERS", "LOCKER_ROOM", "SAUNA", "WATER_FOUNTAIN", "WIFI"]),
+      openingHours,
+      status: "APPROVED",
+      ownerId: owner.id,
+    },
+  });
+  await prisma.facility.create({
+    data: {
+      venueId: gymVenue.id,
+      sportId: "sport_gym",
+      name: "Main floor",
+      attributes: JSON.stringify({
+        areaSqm: 400,
+        hasFreeWeights: true,
+        hasMachines: true,
+        hasCardio: true,
+        hasPersonalTrainer: false,
+      }),
+      bookingModel: "DROP_IN",
+      capacity: 100,
+      isIndoor: true,
+      pricePerHourGEL: 25, // day-pass price
+    },
+  });
+
+  // Fitness Studio venue — CLASS sessions
+  const studio = await prisma.venue.create({
+    data: {
+      name: "Vera Fitness Studio",
+      slug: "vera-fitness-studio",
+      description: "Small-group HIIT, yoga and pilates classes. Drop into a session or buy a punch card.",
+      address: "8 Tabidze St",
+      city: "Tbilisi",
+      lat: 41.711,
+      lng: 44.792,
+      photos: JSON.stringify([
+        "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1200",
+      ]),
+      amenities: JSON.stringify(["SHOWERS", "LOCKER_ROOM", "WATER_FOUNTAIN", "WIFI"]),
+      openingHours,
+      status: "APPROVED",
+      ownerId: owner.id,
+    },
+  });
+  const studioFacility = await prisma.facility.create({
+    data: {
+      venueId: studio.id,
+      sportId: "sport_fitness_class",
+      name: "Main studio",
+      attributes: JSON.stringify({}),
+      bookingModel: "CLASS",
+      capacity: 12,
+      isIndoor: true,
+      pricePerHourGEL: 25, // base class price
+    },
+  });
+  // Three upcoming class sessions over the next week
+  for (let i = 1; i <= 3; i++) {
+    const start = new Date();
+    start.setDate(start.getDate() + i);
+    start.setHours(18, 30, 0, 0);
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + 45);
+    const titles = ["Morning HIIT", "Vinyasa Flow", "Pilates Reformer"];
+    const instructors = ["Anna T.", "Mariam G.", "Nika L."];
+    await prisma.classSession.create({
+      data: {
+        facilityId: studioFacility.id,
+        title: titles[i - 1],
+        startTime: start,
+        endTime: end,
+        capacity: 12,
+        priceGEL: 25,
+        instructor: instructors[i - 1],
+      },
+    });
   }
 
   // A sample booking for the player tomorrow at 18:00 on the first facility (90 min).

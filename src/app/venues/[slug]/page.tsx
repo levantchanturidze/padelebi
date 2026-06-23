@@ -7,15 +7,25 @@ import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookingPanel, type ClientSlot } from "@/components/booking-panel";
+import { ClassRoster, type ClientClassSession } from "@/components/booking/class-roster";
+import { DropInCta } from "@/components/booking/dropin-cta";
 import { PhotoGallery } from "@/components/photo-gallery";
 import { SportBadge } from "@/components/sport/sport-badge";
 import { FavoriteButton } from "@/components/favorite-button";
+import { Rating } from "@/components/reviews/rating";
+import { ReviewForm } from "@/components/reviews/review-form";
 import { prisma } from "@/lib/prisma";
 import { getFacilityAvailability } from "@/lib/availability";
 import { getCurrentUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { AMENITY_LABELS, type Amenity } from "@/lib/enums";
 import { getAdapter, parseAttributes } from "@/lib/sports";
+
+const BOOKING_MODEL_NOUN: Record<string, string> = {
+  TIME_SLOT: "Book",
+  CLASS: "Join a class",
+  DROP_IN: "Day pass",
+};
 
 function parseDateParam(date?: string): Date {
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -45,7 +55,15 @@ export default async function VenueDetailPage({
       facilities: {
         where: { isActive: true },
         orderBy: { name: "asc" },
-        include: { sport: true },
+        include: {
+          sport: true,
+          classes: {
+            where: { isCancelled: false, endTime: { gte: new Date() } },
+            orderBy: { startTime: "asc" },
+            take: 20,
+            include: { _count: { select: { bookings: { where: { status: { not: "CANCELLED" } } } } } },
+          },
+        },
       },
     },
   });
@@ -55,31 +73,67 @@ export default async function VenueDetailPage({
   const amenities = parseJSON<Amenity[]>(venue.amenities, []);
   const photos = parseJSON<string[]>(venue.photos, []);
 
-  const favorited = user
-    ? !!(await prisma.favorite.findUnique({
-        where: { userId_venueId: { userId: user.id, venueId: venue.id } },
-      }))
-    : false;
+  const [favorited, reviews, myReview, reviewAgg] = await Promise.all([
+    user
+      ? prisma.favorite.findUnique({
+          where: { userId_venueId: { userId: user.id, venueId: venue.id } },
+        }).then(Boolean)
+      : Promise.resolve(false),
+    prisma.review.findMany({
+      where: { venueId: venue.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: { user: { select: { name: true } } },
+    }),
+    user
+      ? prisma.review.findUnique({
+          where: { venueId_userId: { venueId: venue.id, userId: user.id } },
+        })
+      : Promise.resolve(null),
+    prisma.review.aggregate({
+      where: { venueId: venue.id },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+  ]);
+  const avgRating = reviewAgg._avg.rating ?? 0;
+  const reviewCount = reviewAgg._count._all;
 
   const selectedFacility = venue.facilities.find((c) => c.id === facilityId) ?? venue.facilities[0] ?? null;
   const selectedDate = parseDateParam(date);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const slots: ClientSlot[] = selectedFacility
-    ? (await getFacilityAvailability(selectedFacility.id, selectedDate)).map((s) => ({
-        start: s.start.toISOString(),
-        end: s.end.toISOString(),
-        available: s.available,
-        priceGEL: s.priceGEL,
-      }))
-    : [];
+  // Only TIME_SLOT facilities need the slot grid pre-computed.
+  const slots: ClientSlot[] =
+    selectedFacility && selectedFacility.bookingModel === "TIME_SLOT"
+      ? (await getFacilityAvailability(selectedFacility.id, selectedDate)).map((s) => ({
+          start: s.start.toISOString(),
+          end: s.end.toISOString(),
+          available: s.available,
+          priceGEL: s.priceGEL,
+        }))
+      : [];
 
   const days = Array.from({ length: 14 }, (_, i) => addDays(new Date(), i));
 
-  // Unique sports across facilities, for the header badges
   const sportTags = Array.from(
     new Map(venue.facilities.map((f) => [f.sport.id, f.sport])).values(),
   );
+
+  // For CLASS, serialise class sessions for the client.
+  const classSessions: ClientClassSession[] =
+    selectedFacility && selectedFacility.bookingModel === "CLASS"
+      ? selectedFacility.classes.map((cs) => ({
+          id: cs.id,
+          title: cs.title,
+          startISO: cs.startTime.toISOString(),
+          endISO: cs.endTime.toISOString(),
+          capacity: cs.capacity,
+          taken: cs._count.bookings,
+          priceGEL: cs.priceGEL,
+          instructor: cs.instructor,
+        }))
+      : [];
 
   return (
     <>
@@ -90,10 +144,13 @@ export default async function VenueDetailPage({
           {/* Booking panel */}
           <Card className="h-fit lg:order-2 lg:sticky lg:top-20">
             <CardContent>
-              <h2 className="text-lg font-semibold">{t("bookACourt")}</h2>
+              <h2 className="text-lg font-semibold">
+                {selectedFacility ? BOOKING_MODEL_NOUN[selectedFacility.bookingModel] ?? t("bookACourt") : t("bookACourt")}
+              </h2>
 
               {selectedFacility ? (
                 <>
+                  {/* Facility selector — always available */}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {venue.facilities.map((c) => (
                       <Link
@@ -112,37 +169,66 @@ export default async function VenueDetailPage({
                     ))}
                   </div>
 
-                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {days.map((d) => {
-                      const ds = format(d, "yyyy-MM-dd");
-                      const active = ds === dateStr;
-                      return (
-                        <Link
-                          key={ds}
-                          href={`/venues/${venue.slug}?facilityId=${selectedFacility.id}&date=${ds}`}
-                          scroll={false}
-                          className={[
-                            "flex min-w-[3.25rem] flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
-                            active
-                              ? "border-brand-500 bg-brand-500 text-white"
-                              : "border-border hover:border-brand-400",
-                          ].join(" ")}
-                        >
-                          <span className="font-medium">{format(d, "EEE")}</span>
-                          <span>{format(d, "d MMM")}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                  {/* TIME_SLOT — date strip + slot grid */}
+                  {selectedFacility.bookingModel === "TIME_SLOT" && (
+                    <>
+                      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        {days.map((d) => {
+                          const ds = format(d, "yyyy-MM-dd");
+                          const active = ds === dateStr;
+                          return (
+                            <Link
+                              key={ds}
+                              href={`/venues/${venue.slug}?facilityId=${selectedFacility.id}&date=${ds}`}
+                              scroll={false}
+                              className={[
+                                "flex min-w-[3.25rem] flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
+                                active
+                                  ? "border-brand-500 bg-brand-500 text-white"
+                                  : "border-border hover:border-brand-400",
+                              ].join(" ")}
+                            >
+                              <span className="font-medium">{format(d, "EEE")}</span>
+                              <span>{format(d, "d MMM")}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
 
-                  <div className="mt-5">
-                    <BookingPanel
-                      slots={slots}
-                      facilityId={selectedFacility.id}
-                      slug={venue.slug}
-                      isAuthenticated={!!user}
-                    />
-                  </div>
+                      <div className="mt-5">
+                        <BookingPanel
+                          slots={slots}
+                          facilityId={selectedFacility.id}
+                          slug={venue.slug}
+                          isAuthenticated={!!user}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* CLASS — session list */}
+                  {selectedFacility.bookingModel === "CLASS" && (
+                    <div className="mt-5">
+                      <ClassRoster
+                        sessions={classSessions}
+                        slug={venue.slug}
+                        isAuthenticated={!!user}
+                      />
+                    </div>
+                  )}
+
+                  {/* DROP_IN — day pass CTA */}
+                  {selectedFacility.bookingModel === "DROP_IN" && (
+                    <div className="mt-5">
+                      <DropInCta
+                        facilityId={selectedFacility.id}
+                        facilityName={selectedFacility.name}
+                        priceGEL={selectedFacility.pricePerHourGEL}
+                        slug={venue.slug}
+                        isAuthenticated={!!user}
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="mt-4 text-sm text-muted">{t("noActiveCourts")}</p>
@@ -168,10 +254,13 @@ export default async function VenueDetailPage({
             </div>
 
             {sportTags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {sportTags.map((s) => (
                   <SportBadge key={s.id} name={s.name} />
                 ))}
+                {reviewCount > 0 && (
+                  <Rating value={avgRating} count={reviewCount} />
+                )}
               </div>
             )}
 
@@ -197,9 +286,47 @@ export default async function VenueDetailPage({
               </div>
             )}
 
+            {/* Reviews */}
             <div className="mt-6">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {t("courts")}
+                Reviews {reviewCount > 0 && <span className="text-foreground">· {reviewCount}</span>}
+              </h2>
+
+              {user && (
+                <Card className="mt-3">
+                  <CardContent>
+                    <ReviewForm
+                      venueId={venue.id}
+                      slug={venue.slug}
+                      initialRating={myReview?.rating ?? 0}
+                      initialComment={myReview?.comment ?? ""}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {reviews.length === 0 ? (
+                <p className="mt-3 text-sm text-muted">No reviews yet.</p>
+              ) : (
+                <ul className="mt-3 space-y-3">
+                  {reviews.map((r) => (
+                    <li key={r.id} className="rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{r.user.name}</span>
+                        <Rating value={r.rating} size="sm" />
+                      </div>
+                      {r.comment && (
+                        <p className="mt-1 text-sm text-foreground/85">{r.comment}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
+                Facilities
               </h2>
               <div className="mt-3 space-y-2">
                 {venue.facilities.map((c) => {
@@ -216,7 +343,13 @@ export default async function VenueDetailPage({
                           <span className="font-medium">{c.name}</span>
                           <SportBadge name={c.sport.name} />
                         </div>
-                        <span className="font-medium text-brand-600">{formatGEL(c.pricePerHourGEL)}/hr</span>
+                        <span className="font-medium text-brand-600">
+                          {c.bookingModel === "DROP_IN"
+                            ? `${formatGEL(c.pricePerHourGEL)}/day`
+                            : c.bookingModel === "CLASS"
+                              ? `from ${formatGEL(c.pricePerHourGEL)}`
+                              : `${formatGEL(c.pricePerHourGEL)}/hr`}
+                        </span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {summary.map((row) => (

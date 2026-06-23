@@ -23,6 +23,8 @@ export const tennisAdapter: SportAdapter<TennisAttributes> = {
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 40,
+    bookingModel: "TIME_SLOT",
+    capacity: 1,
     attributes: { surface: "HARD", lighting: false },
   },
   allowedAmenities: [

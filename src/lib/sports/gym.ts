@@ -17,6 +17,8 @@ export const gymAdapter: SportAdapter<GymAttributes> = {
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 20,
+    bookingModel: "DROP_IN",
+    capacity: 100,
     attributes: {
       areaSqm: 0,
       hasFreeWeights: true,

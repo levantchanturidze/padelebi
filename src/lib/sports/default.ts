@@ -21,6 +21,8 @@ export const defaultAdapter: SportAdapter<DefaultAttributes> = {
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 30,
+    bookingModel: "TIME_SLOT",
+    capacity: 1,
     attributes: {},
   },
   allowedAmenities: AMENITIES,

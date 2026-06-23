@@ -11,6 +11,20 @@ type CreateBookingInput = {
   notes?: string;
 };
 
+type CreateClassBookingInput = {
+  classSessionId: string;
+  userId: string;
+  attendees: number;
+  notes?: string;
+};
+
+type CreateDropInInput = {
+  facilityId: string;
+  userId: string;
+  date: Date; // a calendar day; pass becomes valid for that day
+  notes?: string;
+};
+
 /**
  * Create a booking inside a transaction, re-validating that the slot is free
  * immediately before insert to guarantee no double-booking under concurrency.
@@ -64,6 +78,105 @@ export async function createBooking(input: CreateBookingInput) {
         priceGEL,
         status: "CONFIRMED",
         paymentStatus: "UNPAID", // Phase 1: pay at venue
+        notes: notes || null,
+      },
+    });
+  });
+}
+
+/**
+ * Book one or more seats in a CLASS session. Re-validates capacity inside the
+ * transaction so concurrent bookings can't push the session over its limit.
+ */
+export async function createClassBooking(input: CreateClassBookingInput) {
+  const { classSessionId, userId, attendees, notes } = input;
+  if (attendees < 1 || attendees > 20) throw new BookingError("Invalid number of attendees.");
+
+  return prisma.$transaction(async (tx) => {
+    const session = await tx.classSession.findUnique({
+      where: { id: classSessionId },
+      include: {
+        facility: { include: { venue: true } },
+        bookings: { where: { status: { not: "CANCELLED" } }, select: { attendees: true } },
+      },
+    });
+    if (!session || session.isCancelled) throw new BookingError("This class is no longer available.");
+    if (!session.facility.isActive) throw new BookingError("Facility is not available.");
+    if (session.facility.venue.status !== "APPROVED") throw new BookingError("This venue is not accepting bookings.");
+    if (session.startTime < new Date()) throw new BookingError("This class has already started.");
+
+    const taken = session.bookings.reduce((sum, b) => sum + b.attendees, 0);
+    if (taken + attendees > session.capacity) {
+      const left = Math.max(0, session.capacity - taken);
+      throw new BookingError(
+        left === 0
+          ? "This class is full."
+          : `Only ${left} ${left === 1 ? "seat" : "seats"} left.`,
+      );
+    }
+
+    const priceGEL = session.priceGEL * attendees;
+
+    return tx.booking.create({
+      data: {
+        facilityId: session.facilityId,
+        classSessionId: session.id,
+        userId,
+        attendees,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        priceGEL,
+        status: "CONFIRMED",
+        paymentStatus: "UNPAID",
+        notes: notes || null,
+      },
+    });
+  });
+}
+
+/**
+ * Buy a day pass for a DROP_IN facility (gym, pool entry). One pass per
+ * user per facility per day — repeat purchase same day returns the existing
+ * pass rather than throwing.
+ */
+export async function createDropInPass(input: CreateDropInInput) {
+  const { facilityId, userId, date, notes } = input;
+
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  if (dayEnd <= new Date()) throw new BookingError("Cannot buy a pass for a past day.");
+
+  return prisma.$transaction(async (tx) => {
+    const facility = await tx.facility.findUnique({
+      where: { id: facilityId },
+      include: { venue: true },
+    });
+    if (!facility || !facility.isActive) throw new BookingError("Facility is not available.");
+    if (facility.venue.status !== "APPROVED") throw new BookingError("This venue is not accepting bookings.");
+
+    // Existing same-day pass for this user → return it (idempotent).
+    const existing = await tx.booking.findFirst({
+      where: {
+        facilityId,
+        userId,
+        status: { not: "CANCELLED" },
+        startTime: { gte: dayStart, lt: dayEnd },
+      },
+    });
+    if (existing) return existing;
+
+    return tx.booking.create({
+      data: {
+        facilityId,
+        userId,
+        attendees: 1,
+        startTime: dayStart,
+        endTime: dayEnd,
+        priceGEL: facility.pricePerHourGEL, // day-pass price stored in pricePerHourGEL for now
+        status: "CONFIRMED",
+        paymentStatus: "UNPAID",
         notes: notes || null,
       },
     });
