@@ -16,7 +16,7 @@ function roleLinks(role: string, t: ReturnType<typeof useTranslations<"nav">>) {
       ];
     case "CLUB_ADMIN":
       return [
-        { href: "/club", label: t("clubDashboard") },
+        { href: "/manager", label: t("clubDashboard") },
         { href: "/account/bookings", label: t("myBookings") },
       ];
     default:
@@ -70,7 +70,7 @@ export function MobileMenu({
             <nav className="flex flex-col divide-y divide-border">
               {/* Main links */}
               <div className="space-y-1 px-4 py-3">
-                <MobileLink href="/clubs">{t("findCourts")}</MobileLink>
+                <MobileLink href="/venues">{t("findCourts")}</MobileLink>
                 <MobileLink href="/#how-it-works">{t("howItWorks")}</MobileLink>
               </div>
 

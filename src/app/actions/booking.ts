@@ -12,7 +12,7 @@ export async function createBookingAction(
   formData: FormData,
 ): Promise<BookingActionState> {
   const user = await getCurrentUser();
-  const courtId = String(formData.get("courtId") ?? "");
+  const facilityId = String(formData.get("facilityId") ?? "");
   const start = String(formData.get("start") ?? "");
   const end = String(formData.get("end") ?? "");
   const slug = String(formData.get("slug") ?? "");
@@ -20,7 +20,7 @@ export async function createBookingAction(
   const notes = notesRaw ? String(notesRaw).trim() || undefined : undefined;
 
   if (!user) {
-    redirect(`/login?callbackUrl=${encodeURIComponent(`/clubs/${slug}`)}`);
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/venues/${slug}`)}`);
   }
 
   const startTime = new Date(start);
@@ -31,14 +31,14 @@ export async function createBookingAction(
 
   let bookingId: string;
   try {
-    const booking = await createBooking({ courtId, userId: user.id, startTime, endTime, notes });
+    const booking = await createBooking({ facilityId, userId: user.id, startTime, endTime, notes });
     bookingId = booking.id;
   } catch (err) {
     if (err instanceof BookingError) return { error: err.message };
     return { error: "Could not complete booking. Please try again." };
   }
 
-  revalidatePath(`/clubs/${slug}`);
+  revalidatePath(`/venues/${slug}`);
   redirect(`/account/bookings/${bookingId}`);
 }
 

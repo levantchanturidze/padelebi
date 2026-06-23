@@ -21,7 +21,7 @@ export default async function BookingDetailPage({
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { court: { include: { club: true } } },
+    include: { facility: { include: { venue: true } } },
   });
 
   if (!booking) notFound();
@@ -45,12 +45,12 @@ export default async function BookingDetailPage({
     {
       icon: <MapPin className="h-4 w-4 text-muted" />,
       label: t("club"),
-      value: booking.court.club.name,
+      value: booking.facility.venue.name,
     },
     {
       icon: <MapPin className="h-4 w-4 text-muted opacity-0" />,
       label: t("court"),
-      value: booking.court.name,
+      value: booking.facility.name,
     },
     {
       icon: <CalendarDays className="h-4 w-4 text-muted" />,
@@ -102,7 +102,7 @@ export default async function BookingDetailPage({
             {isCancelled ? t("cancelled") : t("confirmed")}
           </h1>
           {isUpcoming && (
-            <p className="mt-1 text-sm text-muted">{t("payAtClub")} · {booking.court.club.address}</p>
+            <p className="mt-1 text-sm text-muted">{t("payAtClub")} · {booking.facility.venue.address}</p>
           )}
         </div>
 
@@ -133,7 +133,7 @@ export default async function BookingDetailPage({
           <LinkButton href="/account/bookings" variant="primary" size="lg" className="w-full">
             {t("viewBookings")}
           </LinkButton>
-          <LinkButton href="/clubs" variant="outline" size="lg" className="w-full">
+          <LinkButton href="/venues" variant="outline" size="lg" className="w-full">
             {t("bookAnother")}
           </LinkButton>
 

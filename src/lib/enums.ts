@@ -7,8 +7,8 @@ export type Role = (typeof ROLES)[number];
 export const SKILL_LEVELS = ["BEGINNER", "INTERMEDIATE", "ADVANCED", "PRO"] as const;
 export type SkillLevel = (typeof SKILL_LEVELS)[number];
 
-export const CLUB_STATUSES = ["PENDING", "APPROVED", "SUSPENDED"] as const;
-export type ClubStatus = (typeof CLUB_STATUSES)[number];
+export const VENUE_STATUSES = ["PENDING", "APPROVED", "SUSPENDED"] as const;
+export type VenueStatus = (typeof VENUE_STATUSES)[number];
 
 export const SURFACES = ["ARTIFICIAL_GRASS", "CONCRETE", "PANORAMIC"] as const;
 export type Surface = (typeof SURFACES)[number];

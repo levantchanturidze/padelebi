@@ -7,7 +7,7 @@ import { Container } from "@/components/ui/container";
 import { ReschedulePanel } from "@/components/reschedule-panel";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { getCourtAvailability } from "@/lib/availability";
+import { getFacilityAvailability } from "@/lib/availability";
 import { PLAYER_CANCELLATION_WINDOW_MS } from "@/lib/booking";
 import { formatGEL } from "@/lib/utils";
 import type { ClientSlot } from "@/components/booking-panel";
@@ -35,7 +35,7 @@ export default async function ReschedulePage({
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { court: { include: { club: true } } },
+    include: { facility: { include: { venue: true } } },
   });
 
   if (!booking) notFound();
@@ -53,7 +53,7 @@ export default async function ReschedulePage({
   const slots: ClientSlot[] =
     tooLate || isPast
       ? []
-      : (await getCourtAvailability(booking.court.id, selectedDate, booking.id)).map((s) => ({
+      : (await getFacilityAvailability(booking.facility.id, selectedDate, booking.id)).map((s) => ({
           start: s.start.toISOString(),
           end: s.end.toISOString(),
           available: s.available,
@@ -78,7 +78,7 @@ export default async function ReschedulePage({
         </Link>
 
         <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted">{booking.court.club.name} · {booking.court.name}</p>
+        <p className="mt-1 text-sm text-muted">{booking.facility.venue.name} · {booking.facility.name}</p>
 
         {/* Current slot */}
         <div className="mt-6 rounded-[var(--radius-lg)] border border-border bg-surface px-5 py-4">
@@ -141,7 +141,7 @@ export default async function ReschedulePage({
                 originalDurationMs={durationMs}
                 originalStartISO={booking.startTime.toISOString()}
                 originalEndISO={booking.endTime.toISOString()}
-                pricePerHourGEL={booking.court.pricePerHourGEL}
+                pricePerHourGEL={booking.facility.pricePerHourGEL}
               />
             </div>
           </>

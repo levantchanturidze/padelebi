@@ -18,7 +18,7 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
           <Logo />
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted md:flex">
             <Link
-              href="/clubs"
+              href="/venues"
               className="transition-colors duration-150 hover:text-foreground"
             >
               {t("findCourts")}

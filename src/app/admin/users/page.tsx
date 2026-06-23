@@ -24,7 +24,7 @@ export default async function AdminUsersPage({
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
-    { href: "/admin/clubs", label: t("clubs") },
+    { href: "/admin/venues", label: t("clubs") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
   ];
@@ -42,7 +42,7 @@ export default async function AdminUsersPage({
       ...(activeRole ? { role: activeRole } : {}),
     },
     orderBy: { createdAt: "desc" },
-    include: { _count: { select: { bookings: true, clubs: true } } },
+    include: { _count: { select: { bookings: true, venues: true } } },
   });
 
   const hasFilters = !!(search || activeRole);
@@ -105,7 +105,7 @@ export default async function AdminUsersPage({
                     </div>
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    {u._count.bookings} bookings · {u._count.clubs} clubs · {t("createdAt")} {format(u.createdAt, "d MMM yyyy")}
+                    {u._count.bookings} bookings · {u._count.venues} venues · {t("createdAt")} {format(u.createdAt, "d MMM yyyy")}
                   </p>
                   {!isSelf && (
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -160,7 +160,7 @@ export default async function AdminUsersPage({
                         </Badge>
                       </td>
                       <td className="py-3 pr-4 text-muted">
-                        {u._count.bookings} bookings · {u._count.clubs} clubs
+                        {u._count.bookings} bookings · {u._count.venues} venues
                       </td>
                       <td className="py-3 pr-4 text-muted whitespace-nowrap">
                         {format(u.createdAt, "d MMM yyyy")}

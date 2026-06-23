@@ -10,9 +10,9 @@ import { parseJSON, formatGEL } from "@/lib/utils";
 export default async function HomePage() {
   const t = await getTranslations("home");
 
-  const clubs = await prisma.club.findMany({
+  const venues = await prisma.venue.findMany({
     where: { status: "APPROVED" },
-    include: { courts: { where: { isActive: true } } },
+    include: { facilities: { where: { isActive: true } } },
     take: 3,
     orderBy: { createdAt: "desc" },
   });
@@ -66,7 +66,7 @@ export default async function HomePage() {
             </p>
 
             {/* Search bar */}
-            <form action="/clubs" className="mt-7 flex w-full max-w-lg gap-2 sm:mt-9">
+            <form action="/venues" className="mt-7 flex w-full max-w-lg gap-2 sm:mt-9">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
@@ -133,7 +133,7 @@ export default async function HomePage() {
                   </p>
                 </div>
                 <Link
-                  href="/clubs"
+                  href="/venues"
                   className="mt-6 inline-flex w-fit items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-bold text-brand-900 transition-all duration-150 hover:bg-accent/90 hover:gap-3"
                 >
                   {t("browseAll")} <ArrowRight className="h-4 w-4" />
@@ -186,7 +186,7 @@ export default async function HomePage() {
               </h2>
             </div>
             <Link
-              href="/clubs"
+              href="/venues"
               className="flex shrink-0 items-center gap-1 text-sm font-medium text-brand-600 transition-all duration-150 hover:gap-2 hover:text-brand-700"
             >
               {t("viewAll")} <ArrowRight className="h-3.5 w-3.5" />
@@ -194,13 +194,13 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {clubs.map((club) => {
-              const photos = parseJSON<string[]>(club.photos, []);
-              const minPrice = club.courts.length
-                ? Math.min(...club.courts.map((c) => c.pricePerHourGEL))
+            {venues.map((venue) => {
+              const photos = parseJSON<string[]>(venue.photos, []);
+              const minPrice = venue.facilities.length
+                ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL))
                 : null;
               return (
-                <Link key={club.id} href={`/clubs/${club.slug}`} className="group block">
+                <Link key={venue.id} href={`/venues/${venue.slug}`} className="group block">
                   <Card className="overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)]">
                     {/* Image */}
                     <div className="relative h-44 overflow-hidden bg-brand-900">
@@ -224,15 +224,15 @@ export default async function HomePage() {
 
                     <CardContent className="p-4">
                       <h3 className="font-semibold transition-colors duration-150 group-hover:text-brand-700">
-                        {club.name}
+                        {venue.name}
                       </h3>
                       <p className="mt-1 flex items-center gap-1 text-sm text-muted">
                         <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-                        {club.city}
+                        {venue.city}
                       </p>
                       <div className="mt-3 flex items-center justify-between">
                         <Badge tone="brand">
-                          {t("courts", { count: club.courts.length })}
+                          {t("courts", { count: venue.facilities.length })}
                         </Badge>
                         <span className="text-xs font-medium text-brand-600 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
                           {t("bookNow")} →
@@ -244,7 +244,7 @@ export default async function HomePage() {
               );
             })}
 
-            {clubs.length === 0 && (
+            {venues.length === 0 && (
               <p className="col-span-full text-sm text-muted">{t("noCLubs")}</p>
             )}
           </div>

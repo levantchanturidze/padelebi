@@ -3,6 +3,22 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+const SPORTS = [
+  { id: "sport_padel",         slug: "padel",         name: "Padel",         icon: "Trophy",     category: "RACQUET",    sortOrder: 10 },
+  { id: "sport_tennis",        slug: "tennis",        name: "Tennis",        icon: "Trophy",     category: "RACQUET",    sortOrder: 20 },
+  { id: "sport_football",      slug: "football",      name: "Football",      icon: "Goal",       category: "TEAM",       sortOrder: 30 },
+  { id: "sport_basketball",    slug: "basketball",    name: "Basketball",    icon: "Dribbble",   category: "TEAM",       sortOrder: 40 },
+  { id: "sport_volleyball",    slug: "volleyball",    name: "Volleyball",    icon: "Volleyball", category: "TEAM",       sortOrder: 50 },
+  { id: "sport_futsal",        slug: "futsal",        name: "Futsal",        icon: "Goal",       category: "TEAM",       sortOrder: 60 },
+  { id: "sport_badminton",     slug: "badminton",     name: "Badminton",     icon: "Feather",    category: "RACQUET",    sortOrder: 70 },
+  { id: "sport_table_tennis",  slug: "table-tennis",  name: "Table tennis",  icon: "CircleDot",  category: "RACQUET",    sortOrder: 80 },
+  { id: "sport_squash",        slug: "squash",        name: "Squash",        icon: "CircleDot",  category: "RACQUET",    sortOrder: 90 },
+  { id: "sport_swimming",      slug: "swimming",      name: "Swimming pool", icon: "Waves",      category: "WATER",      sortOrder: 100 },
+  { id: "sport_gym",           slug: "gym",           name: "Gym",           icon: "Dumbbell",   category: "FITNESS",    sortOrder: 110 },
+  { id: "sport_fitness_class", slug: "fitness-class", name: "Fitness class", icon: "HeartPulse", category: "FITNESS",    sortOrder: 120 },
+  { id: "sport_martial_arts",  slug: "martial-arts",  name: "Martial arts",  icon: "Swords",     category: "FITNESS",    sortOrder: 130 },
+] as const;
+
 // Default weekly schedule: 08:00–22:00, 90-minute slots, every day.
 function fullWeekSchedule(slotMinutes = 90) {
   return Array.from({ length: 7 }, (_, dayOfWeek) => ({
@@ -16,14 +32,29 @@ function fullWeekSchedule(slotMinutes = 90) {
 async function main() {
   console.log("Seeding Padelebi…");
 
-  // Clean slate (dev only)
+  // Clean slate (dev only). Order respects FK constraints; Sport is kept (catalog).
   await prisma.booking.deleteMany();
   await prisma.blackout.deleteMany();
-  await prisma.courtSchedule.deleteMany();
+  await prisma.facilitySchedule.deleteMany();
   await prisma.review.deleteMany();
-  await prisma.court.deleteMany();
-  await prisma.club.deleteMany();
+  await prisma.facility.deleteMany();
+  await prisma.venue.deleteMany();
   await prisma.user.deleteMany();
+
+  // Sport catalog — upsert so fresh dev DBs (no migration history) still work.
+  for (const sport of SPORTS) {
+    await prisma.sport.upsert({
+      where: { id: sport.id },
+      update: {
+        slug: sport.slug,
+        name: sport.name,
+        icon: sport.icon,
+        category: sport.category,
+        sortOrder: sport.sortOrder,
+      },
+      create: { ...sport },
+    });
+  }
 
   const passwordHash = await bcrypt.hash("password123", 10);
 
@@ -39,7 +70,7 @@ async function main() {
 
   const owner = await prisma.user.create({
     data: {
-      name: "Nino Club Owner",
+      name: "Nino Venue Owner",
       email: "club@padelebi.ge",
       passwordHash,
       role: "CLUB_ADMIN",
@@ -64,8 +95,8 @@ async function main() {
     ),
   );
 
-  // Club 1 — approved, Tbilisi
-  const club1 = await prisma.club.create({
+  // Venue 1 — approved, Tbilisi
+  const venue1 = await prisma.venue.create({
     data: {
       name: "Vake Padel Club",
       slug: "vake-padel-club",
@@ -85,8 +116,8 @@ async function main() {
     },
   });
 
-  // Club 2 — approved, Batumi
-  const club2 = await prisma.club.create({
+  // Venue 2 — approved, Batumi
+  const venue2 = await prisma.venue.create({
     data: {
       name: "Black Sea Padel",
       slug: "black-sea-padel",
@@ -106,8 +137,8 @@ async function main() {
     },
   });
 
-  // Club 3 — pending approval (for platform admin demo)
-  await prisma.club.create({
+  // Venue 3 — pending approval (for platform admin demo)
+  await prisma.venue.create({
     data: {
       name: "Saburtalo Smash Arena",
       slug: "saburtalo-smash-arena",
@@ -122,18 +153,19 @@ async function main() {
     },
   });
 
-  // Courts + schedules
-  const courtSpecs = [
-    { club: club1, name: "Court 1 — Panoramic", surface: "PANORAMIC", indoor: false, price: 60 },
-    { club: club1, name: "Court 2 — Indoor", surface: "ARTIFICIAL_GRASS", indoor: true, price: 70 },
-    { club: club2, name: "Court A — Seaside", surface: "ARTIFICIAL_GRASS", indoor: false, price: 50 },
+  // Facilities (padel courts) + schedules
+  const facilitySpecs = [
+    { venue: venue1, name: "Court 1 — Panoramic", surface: "PANORAMIC", indoor: false, price: 60 },
+    { venue: venue1, name: "Court 2 — Indoor", surface: "ARTIFICIAL_GRASS", indoor: true, price: 70 },
+    { venue: venue2, name: "Court A — Seaside", surface: "ARTIFICIAL_GRASS", indoor: false, price: 50 },
   ];
 
-  const courts = [];
-  for (const spec of courtSpecs) {
-    const court = await prisma.court.create({
+  const facilities = [];
+  for (const spec of facilitySpecs) {
+    const facility = await prisma.facility.create({
       data: {
-        clubId: spec.club.id,
+        venueId: spec.venue.id,
+        sportId: "sport_padel",
         name: spec.name,
         surface: spec.surface,
         isIndoor: spec.indoor,
@@ -141,10 +173,10 @@ async function main() {
         schedules: { create: fullWeekSchedule() },
       },
     });
-    courts.push(court);
+    facilities.push(facility);
   }
 
-  // A sample booking for the player tomorrow at 18:00 on the first court (90 min).
+  // A sample booking for the player tomorrow at 18:00 on the first facility (90 min).
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const start = new Date(
@@ -161,21 +193,25 @@ async function main() {
 
   await prisma.booking.create({
     data: {
-      courtId: courts[0].id,
+      facilityId: facilities[0].id,
       userId: player.id,
       startTime: start,
       endTime: end,
-      priceGEL: Math.round((courts[0].pricePerHourGEL * 90) / 60),
+      priceGEL: Math.round((facilities[0].pricePerHourGEL * 90) / 60),
       status: "CONFIRMED",
       paymentStatus: "UNPAID",
     },
   });
 
   console.log("Seed complete.");
+  console.log(`  ${SPORTS.length} sports, 3 venues, ${facilities.length} facilities`);
   console.log("Logins (password: password123):");
   console.log("  Platform admin: admin@padelebi.ge");
-  console.log("  Club admin:     club@padelebi.ge");
+  console.log("  Venue manager:  club@padelebi.ge");
   console.log("  Player:         player@padelebi.ge");
+
+  void admin; // referenced for clarity above
+  void player;
 }
 
 main()

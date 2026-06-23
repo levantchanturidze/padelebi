@@ -26,7 +26,7 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
   return aStart < bEnd && aEnd > bStart;
 }
 
-export default async function ClubsPage({
+export default async function VenuesPage({
   searchParams,
 }: {
   searchParams: Promise<{
@@ -71,14 +71,14 @@ export default async function ClubsPage({
 
   const needsAvailability = weekday !== undefined && timeMinutes !== undefined && dayStart && dayEnd;
 
-  const clubs = await prisma.club.findMany({
+  const venues = await prisma.venue.findMany({
     where: {
       status: "APPROVED",
       ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
-      ...(surface ? { courts: { some: { surface, isActive: true } } } : {}),
+      ...(surface ? { facilities: { some: { surface, isActive: true } } } : {}),
     },
     include: {
-      courts: {
+      facilities: {
         where: { isActive: true },
         include: {
           schedules: true,
@@ -94,25 +94,25 @@ export default async function ClubsPage({
     orderBy: { name: "asc" },
   });
 
-  const filtered = clubs.filter((club) => {
-    if (indoor === "indoor" && !club.courts.some((c) => c.isIndoor)) return false;
-    if (indoor === "outdoor" && !club.courts.some((c) => !c.isIndoor)) return false;
+  const filtered = venues.filter((venue) => {
+    if (indoor === "indoor" && !venue.facilities.some((c) => c.isIndoor)) return false;
+    if (indoor === "outdoor" && !venue.facilities.some((c) => !c.isIndoor)) return false;
 
     if (maxPriceNum !== undefined) {
-      const minPrice = club.courts.length ? Math.min(...club.courts.map((c) => c.pricePerHourGEL)) : Infinity;
+      const minPrice = venue.facilities.length ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL)) : Infinity;
       if (minPrice > maxPriceNum) return false;
     }
 
     if (selectedAmenities.length > 0) {
-      const clubAmenities = parseJSON<string[]>(club.amenities, []);
-      if (!selectedAmenities.every((a) => clubAmenities.includes(a))) return false;
+      const venueAmenities = parseJSON<string[]>(venue.amenities, []);
+      if (!selectedAmenities.every((a) => venueAmenities.includes(a))) return false;
     }
 
     if (weekday !== undefined) {
       if (needsAvailability && dayStart) {
-        // Show only clubs with at least one court that has a free slot at the chosen date+time
-        const hasSlot = club.courts.some((court) => {
-          const schedule = court.schedules.find((s) => s.dayOfWeek === weekday);
+        // Show only venues with at least one facility that has a free slot at the chosen date+time
+        const hasSlot = venue.facilities.some((facility) => {
+          const schedule = facility.schedules.find((s) => s.dayOfWeek === weekday);
           if (!schedule) return false;
           if (timeMinutes! < schedule.openMinutes) return false;
           if (timeMinutes! + schedule.slotMinutes > schedule.closeMinutes) return false;
@@ -120,14 +120,14 @@ export default async function ClubsPage({
           const slotStart = dateAtMinutes(dayStart!, timeMinutes!);
           const slotEnd = new Date(slotStart.getTime() + schedule.slotMinutes * 60_000);
 
-          if (court.bookings.some((b) => overlaps(slotStart, slotEnd, b.startTime, b.endTime))) return false;
-          if (court.blackouts.some((bl) => overlaps(slotStart, slotEnd, bl.startTime, bl.endTime))) return false;
+          if (facility.bookings.some((b) => overlaps(slotStart, slotEnd, b.startTime, b.endTime))) return false;
+          if (facility.blackouts.some((bl) => overlaps(slotStart, slotEnd, bl.startTime, bl.endTime))) return false;
           return true;
         });
         if (!hasSlot) return false;
       } else {
-        // Date selected but no time — show clubs open on that weekday
-        if (!club.courts.some((c) => c.schedules.some((s) => s.dayOfWeek === weekday))) return false;
+        // Date selected but no time — show venues open on that weekday
+        if (!venue.facilities.some((c) => c.schedules.some((s) => s.dayOfWeek === weekday))) return false;
       }
     }
 
@@ -148,8 +148,8 @@ export default async function ClubsPage({
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("title")}</h1>
       <p className="mt-1 text-muted">{t("clubsAvailable", { count: filtered.length })}</p>
 
-      <form className="mt-6 space-y-4" action="/clubs">
-        {/* Row 1: city, court type, surface, max price, submit */}
+      <form className="mt-6 space-y-4" action="/venues">
+        {/* Row 1: city, facility type, surface, max price, submit */}
         <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
           <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{t("city")}</label>
@@ -179,7 +179,7 @@ export default async function ClubsPage({
           <div className="col-span-2 flex items-center gap-2 sm:col-span-1 sm:pb-0.5">
             <Button type="submit">{t("apply")}</Button>
             {hasFilters && (
-              <Link href="/clubs" className="text-sm text-muted hover:text-foreground">{t("clear")}</Link>
+              <Link href="/venues" className="text-sm text-muted hover:text-foreground">{t("clear")}</Link>
             )}
           </div>
         </div>
@@ -222,25 +222,25 @@ export default async function ClubsPage({
       </form>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((club) => {
-          const photos = parseJSON<string[]>(club.photos, []);
-          const minPrice = club.courts.length
-            ? Math.min(...club.courts.map((c) => c.pricePerHourGEL))
+        {filtered.map((venue) => {
+          const photos = parseJSON<string[]>(venue.photos, []);
+          const minPrice = venue.facilities.length
+            ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL))
             : null;
           return (
-            <Link key={club.id} href={`/clubs/${club.slug}`}>
+            <Link key={venue.id} href={`/venues/${venue.slug}`}>
               <Card className="overflow-hidden transition-shadow hover:shadow-md">
                 <div
                   className="h-40 bg-brand-100 bg-cover bg-center"
                   style={photos[0] ? { backgroundImage: `url(${photos[0]})` } : undefined}
                 />
                 <CardContent>
-                  <h3 className="font-semibold">{club.name}</h3>
+                  <h3 className="font-semibold">{venue.name}</h3>
                   <p className="mt-1 flex items-center gap-1 text-sm text-muted">
-                    <MapPin className="h-3.5 w-3.5" /> {club.city}
+                    <MapPin className="h-3.5 w-3.5" /> {venue.city}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
-                    <Badge tone="brand">{t("courts", { count: club.courts.length })}</Badge>
+                    <Badge tone="brand">{t("courts", { count: venue.facilities.length })}</Badge>
                     {minPrice !== null && (
                       <span className="text-sm font-medium">{t("fromPrice", { price: formatGEL(minPrice) })}</span>
                     )}

@@ -7,7 +7,7 @@ const { auth } = NextAuth(authConfig);
 // Route prefixes that require a specific role.
 const ROLE_GATES: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin", roles: ["PLATFORM_ADMIN"] },
-  { prefix: "/club", roles: ["CLUB_ADMIN", "PLATFORM_ADMIN"] },
+  { prefix: "/manager", roles: ["CLUB_ADMIN", "PLATFORM_ADMIN"] },
   { prefix: "/account", roles: ["PLAYER", "CLUB_ADMIN", "PLATFORM_ADMIN"] },
 ];
 
@@ -31,5 +31,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/club/:path*", "/account/:path*"],
+  matcher: ["/admin/:path*", "/manager/:path*", "/account/:path*"],
 };

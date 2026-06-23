@@ -22,7 +22,7 @@ function BookingRow({
     endTime: Date;
     priceGEL: number;
     status: string;
-    court: { name: string; club: { name: string; slug: string } };
+    facility: { name: string; venue: { name: string; slug: string } };
   };
   cancellable: boolean;
   cancelLabel: string;
@@ -35,12 +35,12 @@ function BookingRow({
       <div>
         <div className="flex items-center gap-2">
           <Link href={`/account/bookings/${booking.id}`} className="font-medium hover:underline">
-            {booking.court.club.name}
+            {booking.facility.venue.name}
           </Link>
           <Badge tone={tone}>{booking.status.toLowerCase()}</Badge>
         </div>
         <p className="mt-0.5 text-sm text-muted">
-          {booking.court.name} · {format(booking.startTime, "EEE d MMM, HH:mm")}–
+          {booking.facility.name} · {format(booking.startTime, "EEE d MMM, HH:mm")}–
           {format(booking.endTime, "HH:mm")}
         </p>
       </div>
@@ -83,7 +83,7 @@ export default async function MyBookingsPage({
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },
-    include: { court: { include: { club: true } } },
+    include: { facility: { include: { venue: true } } },
     orderBy: { startTime: "desc" },
   });
 
@@ -110,7 +110,7 @@ export default async function MyBookingsPage({
           {upcoming.length === 0 ? (
             <p className="mt-3 text-sm text-muted">
               {t("noUpcoming")}{" "}
-              <Link href="/clubs" className="text-brand-600 hover:underline">{t("findACourt")}</Link>
+              <Link href="/venues" className="text-brand-600 hover:underline">{t("findACourt")}</Link>
             </p>
           ) : (
             <div className="mt-2">

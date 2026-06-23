@@ -22,25 +22,27 @@ function parseLocalDate(dateStr: string, endOfDay = false): Date {
 export default async function AdminBookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; clubId?: string; status?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; venueId?: string; clubId?: string; status?: string }>;
 }) {
-  const { from, to, clubId: clubIdParam, status } = await searchParams;
+  const sp = await searchParams;
+  const { from, to, status } = sp;
+  const venueIdParam = sp.venueId ?? sp.clubId; // accept legacy clubId
   await requireRole(["PLATFORM_ADMIN"], "/admin/bookings");
   const t = await getTranslations("admin");
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
-    { href: "/admin/clubs", label: t("clubs") },
+    { href: "/admin/venues", label: t("clubs") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
   ];
 
-  const allClubs = await prisma.club.findMany({
+  const allVenues = await prisma.venue.findMany({
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 
-  const clubId = clubIdParam && allClubs.some((c) => c.id === clubIdParam) ? clubIdParam : undefined;
+  const venueId = venueIdParam && allVenues.some((c) => c.id === venueIdParam) ? venueIdParam : undefined;
   const fromDate = from ? parseLocalDate(from) : null;
   const toDate = to ? parseLocalDate(to, true) : null;
   const startTimeFilter: { gte?: Date; lte?: Date } = {};
@@ -50,11 +52,11 @@ export default async function AdminBookingsPage({
 
   const bookings = await prisma.booking.findMany({
     where: {
-      ...(clubId ? { court: { clubId } } : {}),
+      ...(venueId ? { facility: { venueId } } : {}),
       ...(activeStatus ? { status: activeStatus } : {}),
       ...(Object.keys(startTimeFilter).length ? { startTime: startTimeFilter } : {}),
     },
-    include: { court: { include: { club: true } }, user: true },
+    include: { facility: { include: { venue: true } }, user: true },
     orderBy: { startTime: "desc" },
     take: 500,
   });
@@ -64,7 +66,7 @@ export default async function AdminBookingsPage({
     .reduce((sum, b) => sum + b.priceGEL, 0);
 
   const now = new Date();
-  const hasFilters = !!(from || to || clubId || activeStatus);
+  const hasFilters = !!(from || to || venueId || activeStatus);
 
   return (
     <DashboardShell title={t("bookingsList")} subtitle="" nav={ADMIN_NAV} current="/admin/bookings">
@@ -94,12 +96,12 @@ export default async function AdminBookingsPage({
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted">{t("clubs")}</label>
               <select
-                name="clubId"
-                defaultValue={clubIdParam ?? ""}
+                name="venueId"
+                defaultValue={venueIdParam ?? ""}
                 className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
               >
                 <option value="">{t("allClubs")}</option>
-                {allClubs.map((c) => (
+                {allVenues.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -155,7 +157,7 @@ export default async function AdminBookingsPage({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-medium">{format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}</p>
-                        <p className="mt-0.5 text-muted">{b.court.club.name} / {b.court.name}</p>
+                        <p className="mt-0.5 text-muted">{b.facility.venue.name} / {b.facility.name}</p>
                       </div>
                       <Badge tone={tone[b.status as keyof typeof tone] ?? "neutral"}>
                         {b.status.toLowerCase()}
@@ -165,7 +167,7 @@ export default async function AdminBookingsPage({
                       <div>
                         <p>{b.user.name}</p>
                         <p className="text-muted">{b.user.email}</p>
-                        {b.notes && <p className="mt-1 italic text-muted">"{b.notes}"</p>}
+                        {b.notes && <p className="mt-1 italic text-muted">&quot;{b.notes}&quot;</p>}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{formatGEL(b.priceGEL)}</span>
@@ -188,7 +190,7 @@ export default async function AdminBookingsPage({
                   <thead>
                     <tr className="border-b border-border text-left text-muted">
                       <th className="py-2 pr-4 font-medium">When</th>
-                      <th className="py-2 pr-4 font-medium">Club / Court</th>
+                      <th className="py-2 pr-4 font-medium">Venue / Facility</th>
                       <th className="py-2 pr-4 font-medium">Player</th>
                       <th className="py-2 pr-4 font-medium">Notes</th>
                       <th className="py-2 pr-4 font-medium">Price</th>
@@ -203,7 +205,7 @@ export default async function AdminBookingsPage({
                           {format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}
                         </td>
                         <td className="py-2.5 pr-4">
-                          {b.court.club.name} / {b.court.name}
+                          {b.facility.venue.name} / {b.facility.name}
                         </td>
                         <td className="py-2.5 pr-4">
                           <div>{b.user.name}</div>

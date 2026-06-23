@@ -12,7 +12,7 @@ function linksForRole(role: string, t: ReturnType<typeof useTranslations<"nav">>
       ];
     case "CLUB_ADMIN":
       return [
-        { href: "/club", label: t("clubDashboard") },
+        { href: "/manager", label: t("clubDashboard") },
         { href: "/account/bookings", label: t("myBookings") },
       ];
     default:

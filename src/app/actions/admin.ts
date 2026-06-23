@@ -4,15 +4,15 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { CLUB_STATUSES, ROLES } from "@/lib/enums";
+import { VENUE_STATUSES, ROLES } from "@/lib/enums";
 
-export async function setClubStatusAction(formData: FormData) {
+export async function setVenueStatusAction(formData: FormData) {
   await requireRole(["PLATFORM_ADMIN"], "/admin");
-  const clubId = String(formData.get("clubId"));
-  const status = z.enum(CLUB_STATUSES).parse(formData.get("status"));
+  const venueId = String(formData.get("venueId"));
+  const status = z.enum(VENUE_STATUSES).parse(formData.get("status"));
 
-  await prisma.club.update({ where: { id: clubId }, data: { status } });
-  revalidatePath("/admin/clubs");
+  await prisma.venue.update({ where: { id: venueId }, data: { status } });
+  revalidatePath("/admin/venues");
   revalidatePath("/admin");
 }
 

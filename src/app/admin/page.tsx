@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { setClubStatusAction } from "@/app/actions/admin";
+import { setVenueStatusAction } from "@/app/actions/admin";
 import { formatGEL } from "@/lib/utils";
 
 const roleTone = { PLATFORM_ADMIN: "brand", CLUB_ADMIN: "neutral", PLAYER: "muted" } as const;
@@ -56,15 +56,15 @@ function StatCard({
   return href ? <Link href={href}>{inner}</Link> : <div>{inner}</div>;
 }
 
-function StatusButton({ clubId, status, label, variant }: {
-  clubId: string;
+function StatusButton({ venueId, status, label, variant }: {
+  venueId: string;
   status: string;
   label: string;
   variant: "primary" | "outline" | "danger";
 }) {
   return (
-    <form action={setClubStatusAction}>
-      <input type="hidden" name="clubId" value={clubId} />
+    <form action={setVenueStatusAction}>
+      <input type="hidden" name="venueId" value={venueId} />
       <input type="hidden" name="status" value={status} />
       <Button type="submit" size="sm" variant={variant}>{label}</Button>
     </form>
@@ -77,7 +77,7 @@ export default async function AdminOverviewPage() {
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
-    { href: "/admin/clubs", label: t("clubs") },
+    { href: "/admin/venues", label: t("clubs") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
   ];
@@ -88,18 +88,18 @@ export default async function AdminOverviewPage() {
 
   const [
     totalUsers,
-    totalClubs,
-    pendingClubs,
+    totalVenues,
+    pendingVenues,
     totalBookings,
     revenueAgg,
     newUsersWeek,
     newBookingsWeek,
     recentUsers,
-    pendingClubsList,
+    pendingVenuesList,
   ] = await Promise.all([
     prisma.user.count(),
-    prisma.club.count(),
-    prisma.club.count({ where: { status: "PENDING" } }),
+    prisma.venue.count(),
+    prisma.venue.count({ where: { status: "PENDING" } }),
     prisma.booking.count({ where: { status: { not: "CANCELLED" } } }),
     prisma.booking.aggregate({
       where: { status: { not: "CANCELLED" } },
@@ -108,9 +108,9 @@ export default async function AdminOverviewPage() {
     prisma.user.count({ where: { createdAt: { gte: weekStart } } }),
     prisma.booking.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: weekStart } } }),
     prisma.user.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
-    prisma.club.findMany({
+    prisma.venue.findMany({
       where: { status: "PENDING" },
-      include: { owner: true, courts: true },
+      include: { owner: true, facilities: true },
       orderBy: { createdAt: "asc" },
     }),
   ]);
@@ -121,13 +121,13 @@ export default async function AdminOverviewPage() {
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard label={t("usersLabel")} value={totalUsers} icon={<Users className="h-4.5 w-4.5" />} href="/admin/users" />
-        <StatCard label={t("clubsLabel")} value={totalClubs} icon={<Building2 className="h-4.5 w-4.5" />} href="/admin/clubs" />
+        <StatCard label={t("clubsLabel")} value={totalVenues} icon={<Building2 className="h-4.5 w-4.5" />} href="/admin/venues" />
         <StatCard
           label={t("pendingApprovals")}
-          value={pendingClubs}
+          value={pendingVenues}
           icon={<AlertCircle className="h-4.5 w-4.5" />}
-          href="/admin/clubs?status=PENDING"
-          warn={pendingClubs > 0}
+          href="/admin/venues?status=PENDING"
+          warn={pendingVenues > 0}
         />
         <StatCard label={t("bookings")} value={totalBookings} icon={<CalendarDays className="h-4.5 w-4.5" />} href="/admin/bookings" />
         <StatCard
@@ -148,30 +148,30 @@ export default async function AdminOverviewPage() {
         </span>
       </div>
 
-      {/* Pending clubs — only shown when there are any */}
-      {pendingClubsList.length > 0 && (
+      {/* Pending venues — only shown when there are any */}
+      {pendingVenuesList.length > 0 && (
         <div className="mt-6">
           <div className="rounded-[var(--radius-xl)] border border-amber-200 bg-amber-50 p-5">
             <div className="mb-4 flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-warning" />
-              <h2 className="font-semibold">{t("pendingApprovals")} ({pendingClubsList.length})</h2>
+              <h2 className="font-semibold">{t("pendingApprovals")} ({pendingVenuesList.length})</h2>
             </div>
             <div className="space-y-2">
-              {pendingClubsList.map((club) => (
+              {pendingVenuesList.map((venue) => (
                 <div
-                  key={club.id}
+                  key={venue.id}
                   className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <p className="font-medium">{club.name}</p>
+                    <p className="font-medium">{venue.name}</p>
                     <p className="mt-0.5 text-sm text-muted">
-                      {club.city} · {club.courts.length} courts · {club.owner.name}
-                      <span className="text-muted/70"> ({club.owner.email})</span>
+                      {venue.city} · {venue.facilities.length} courts · {venue.owner.name}
+                      <span className="text-muted/70"> ({venue.owner.email})</span>
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <StatusButton clubId={club.id} status="APPROVED" label={t("approve")} variant="primary" />
-                    <StatusButton clubId={club.id} status="SUSPENDED" label={t("suspend")} variant="danger" />
+                    <StatusButton venueId={venue.id} status="APPROVED" label={t("approve")} variant="primary" />
+                    <StatusButton venueId={venue.id} status="SUSPENDED" label={t("suspend")} variant="danger" />
                   </div>
                 </div>
               ))}

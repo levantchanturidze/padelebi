@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { createClubAction } from "@/app/actions/club";
+import { createVenueAction } from "@/app/actions/venue";
 import { formatGEL } from "@/lib/utils";
 
 const statusTone = { APPROVED: "success", PENDING: "warning", SUSPENDED: "danger" } as const;
@@ -45,21 +45,21 @@ function StatCard({
   );
 }
 
-export default async function ClubOverviewPage() {
-  const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/club");
+export default async function ManagerOverviewPage() {
+  const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/manager");
   const t = await getTranslations("club");
 
-  const CLUB_NAV = [
-    { href: "/club", label: t("overview") },
-    { href: "/club/bookings", label: t("bookings") },
+  const MANAGER_NAV = [
+    { href: "/manager", label: t("overview") },
+    { href: "/manager/bookings", label: t("bookings") },
   ];
 
-  const clubs = await prisma.club.findMany({
+  const venues = await prisma.venue.findMany({
     where: user.role === "PLATFORM_ADMIN" ? {} : { ownerId: user.id },
-    include: { courts: true },
+    include: { facilities: true },
     orderBy: { createdAt: "desc" },
   });
-  const clubIds = clubs.map((c) => c.id);
+  const venueIds = venues.map((c) => c.id);
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -77,16 +77,16 @@ export default async function ClubOverviewPage() {
   const [todaysBookings, weekBookingsRaw, upcomingBookings] = await Promise.all([
     prisma.booking.findMany({
       where: {
-        court: { clubId: { in: clubIds } },
+        facility: { venueId: { in: venueIds } },
         status: { not: "CANCELLED" },
         startTime: { gte: todayStart, lt: todayEnd },
       },
-      include: { court: { include: { club: true } }, user: true },
+      include: { facility: { include: { venue: true } }, user: true },
       orderBy: { startTime: "asc" },
     }),
     prisma.booking.findMany({
       where: {
-        court: { clubId: { in: clubIds } },
+        facility: { venueId: { in: venueIds } },
         status: { not: "CANCELLED" },
         startTime: { gte: sevenDaysAgo, lt: todayEnd },
       },
@@ -94,11 +94,11 @@ export default async function ClubOverviewPage() {
     }),
     prisma.booking.findMany({
       where: {
-        court: { clubId: { in: clubIds } },
+        facility: { venueId: { in: venueIds } },
         status: { not: "CANCELLED" },
         startTime: { gte: now, lt: threeDaysEnd },
       },
-      include: { court: { include: { club: true } }, user: true },
+      include: { facility: { include: { venue: true } }, user: true },
       orderBy: { startTime: "asc" },
       take: 30,
     }),
@@ -135,11 +135,11 @@ export default async function ClubOverviewPage() {
   }
 
   return (
-    <DashboardShell title={t("title")} subtitle={t("desc")} nav={CLUB_NAV} current="/club">
+    <DashboardShell title={t("title")} subtitle={t("desc")} nav={MANAGER_NAV} current="/manager">
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label={t("clubsCount")} value={String(clubs.length)} icon={<Building2 className="h-4.5 w-4.5" />} />
+        <StatCard label={t("clubsCount")} value={String(venues.length)} icon={<Building2 className="h-4.5 w-4.5" />} />
         <StatCard label={t("bookingsToday")} value={String(todaysBookings.length)} icon={<CalendarDays className="h-4.5 w-4.5" />} />
         <StatCard label={t("revenueToday")} value={formatGEL(revenueToday)} icon={<Banknote className="h-4.5 w-4.5" />} />
         <StatCard label={t("revenueWeek")} value={formatGEL(weekRevenue)} icon={<TrendingUp className="h-4.5 w-4.5" />} accent />
@@ -185,7 +185,7 @@ export default async function ClubOverviewPage() {
       {/* Upcoming bookings */}
       <div className="mt-6 flex items-center justify-between">
         <h2 className="font-semibold">{t("upcomingBookings")}</h2>
-        <Link href="/club/bookings" className="text-sm text-brand-600 hover:underline">{t("bookings")} →</Link>
+        <Link href="/manager/bookings" className="text-sm text-brand-600 hover:underline">{t("bookings")} →</Link>
       </div>
 
       {upcomingBookings.length === 0 ? (
@@ -211,7 +211,7 @@ export default async function ClubOverviewPage() {
                         <span className="font-medium tabular-nums">
                           {format(b.startTime, "HH:mm")}–{format(b.endTime, "HH:mm")}
                         </span>
-                        <span className="text-muted">{b.court.name}</span>
+                        <span className="text-muted">{b.facility.name}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span>{b.user.name}</span>
@@ -226,35 +226,35 @@ export default async function ClubOverviewPage() {
         </div>
       )}
 
-      {/* Your clubs */}
+      {/* Your venues */}
       <h2 className="mt-8 font-semibold">{t("yourClubs")}</h2>
       <div className="mt-3 space-y-3">
-        {clubs.map((club) => (
-          <Link key={club.id} href={`/club/${club.id}?tab=profile`} className="group block">
+        {venues.map((venue) => (
+          <Link key={venue.id} href={`/manager/${venue.id}?tab=profile`} className="group block">
             <Card className="transition-all duration-150 group-hover:shadow-card-md">
               <CardContent className="flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{club.name}</span>
-                    <Badge tone={statusTone[club.status as keyof typeof statusTone] ?? "neutral"}>
-                      {club.status.toLowerCase()}
+                    <span className="font-medium">{venue.name}</span>
+                    <Badge tone={statusTone[venue.status as keyof typeof statusTone] ?? "neutral"}>
+                      {venue.status.toLowerCase()}
                     </Badge>
                   </div>
-                  <p className="mt-0.5 text-sm text-muted">{club.city} · {club.courts.length} courts</p>
+                  <p className="mt-0.5 text-sm text-muted">{venue.city} · {venue.facilities.length} courts</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
               </CardContent>
             </Card>
           </Link>
         ))}
-        {clubs.length === 0 && <p className="text-sm text-muted">{t("noClubs")}</p>}
+        {venues.length === 0 && <p className="text-sm text-muted">{t("noClubs")}</p>}
       </div>
 
-      {/* Add new club */}
+      {/* Add new venue */}
       <h2 className="mt-8 font-semibold">{t("addNewClub")}</h2>
       <Card className="mt-3">
         <CardContent>
-          <form action={createClubAction} className="grid max-w-xl gap-4 sm:grid-cols-2">
+          <form action={createVenueAction} className="grid max-w-xl gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="name">{t("clubName")}</Label>
               <Input id="name" name="name" required />

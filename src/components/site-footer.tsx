@@ -14,7 +14,7 @@ export async function SiteFooter() {
             <p className="text-sm text-muted">{t("tagline")}</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
-            <Link href="/clubs" className="transition-colors duration-150 hover:text-foreground">
+            <Link href="/venues" className="transition-colors duration-150 hover:text-foreground">
               {t("findCourts")}
             </Link>
             <Link href="/register" className="transition-colors duration-150 hover:text-foreground">

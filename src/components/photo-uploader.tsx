@@ -3,11 +3,11 @@
 import { useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { updateClubPhotosAction, updateCourtPhotosAction } from "@/app/actions/club";
+import { updateVenuePhotosAction, updateFacilityPhotosAction } from "@/app/actions/venue";
 
 type Props =
-  | { kind: "club"; entityId: string; initial: string[] }
-  | { kind: "court"; entityId: string; initial: string[] };
+  | { kind: "venue"; entityId: string; initial: string[] }
+  | { kind: "facility"; entityId: string; initial: string[] };
 
 export function PhotoUploader({ kind, entityId, initial }: Props) {
   const t = useTranslations("photos");
@@ -50,11 +50,11 @@ export function PhotoUploader({ kind, entityId, initial }: Props) {
 
   function save(list: string[]) {
     const fd = new FormData();
-    fd.append(kind === "club" ? "clubId" : "courtId", entityId);
+    fd.append(kind === "venue" ? "venueId" : "facilityId", entityId);
     fd.append("photos", JSON.stringify(list));
     startSave(() => {
-      if (kind === "club") updateClubPhotosAction(fd);
-      else updateCourtPhotosAction(fd);
+      if (kind === "venue") updateVenuePhotosAction(fd);
+      else updateFacilityPhotosAction(fd);
     });
   }
 

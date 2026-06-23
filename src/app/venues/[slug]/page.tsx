@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookingPanel, type ClientSlot } from "@/components/booking-panel";
 import { PhotoGallery } from "@/components/photo-gallery";
 import { prisma } from "@/lib/prisma";
-import { getCourtAvailability } from "@/lib/availability";
+import { getFacilityAvailability } from "@/lib/availability";
 import { getCurrentUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { AMENITY_LABELS, SURFACE_LABELS, type Amenity, type Surface } from "@/lib/enums";
@@ -23,33 +23,36 @@ function parseDateParam(date?: string): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-export default async function ClubDetailPage({
+export default async function VenueDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ courtId?: string; date?: string }>;
+  searchParams: Promise<{ facilityId?: string; courtId?: string; date?: string }>;
 }) {
   const { slug } = await params;
-  const { courtId, date } = await searchParams;
+  const sp = await searchParams;
+  // Accept legacy `courtId` query param so external links from /clubs/[slug]?courtId=… still work.
+  const facilityId = sp.facilityId ?? sp.courtId;
+  const date = sp.date;
   const t = await getTranslations("clubDetail");
 
-  const club = await prisma.club.findFirst({
+  const venue = await prisma.venue.findFirst({
     where: { slug, status: "APPROVED" },
-    include: { courts: { where: { isActive: true }, orderBy: { name: "asc" } } },
+    include: { facilities: { where: { isActive: true }, orderBy: { name: "asc" } } },
   });
-  if (!club) notFound();
+  if (!venue) notFound();
 
   const user = await getCurrentUser();
-  const amenities = parseJSON<Amenity[]>(club.amenities, []);
-  const photos = parseJSON<string[]>(club.photos, []);
+  const amenities = parseJSON<Amenity[]>(venue.amenities, []);
+  const photos = parseJSON<string[]>(venue.photos, []);
 
-  const selectedCourt = club.courts.find((c) => c.id === courtId) ?? club.courts[0] ?? null;
+  const selectedFacility = venue.facilities.find((c) => c.id === facilityId) ?? venue.facilities[0] ?? null;
   const selectedDate = parseDateParam(date);
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const slots: ClientSlot[] = selectedCourt
-    ? (await getCourtAvailability(selectedCourt.id, selectedDate)).map((s) => ({
+  const slots: ClientSlot[] = selectedFacility
+    ? (await getFacilityAvailability(selectedFacility.id, selectedDate)).map((s) => ({
         start: s.start.toISOString(),
         end: s.end.toISOString(),
         available: s.available,
@@ -71,18 +74,18 @@ export default async function ClubDetailPage({
             <CardContent>
               <h2 className="text-lg font-semibold">{t("bookACourt")}</h2>
 
-              {selectedCourt ? (
+              {selectedFacility ? (
                 <>
-                  {/* Court selector */}
+                  {/* Facility selector */}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {club.courts.map((c) => (
+                    {venue.facilities.map((c) => (
                       <Link
                         key={c.id}
-                        href={`/clubs/${club.slug}?courtId=${c.id}&date=${dateStr}`}
+                        href={`/venues/${venue.slug}?facilityId=${c.id}&date=${dateStr}`}
                         scroll={false}
                         className={[
                           "rounded-full border px-3 py-1 text-sm",
-                          c.id === selectedCourt.id
+                          c.id === selectedFacility.id
                             ? "border-brand-500 bg-brand-50 text-brand-700"
                             : "border-border text-muted hover:text-foreground",
                         ].join(" ")}
@@ -100,7 +103,7 @@ export default async function ClubDetailPage({
                       return (
                         <Link
                           key={ds}
-                          href={`/clubs/${club.slug}?courtId=${selectedCourt.id}&date=${ds}`}
+                          href={`/venues/${venue.slug}?facilityId=${selectedFacility.id}&date=${ds}`}
                           scroll={false}
                           className={[
                             "flex min-w-[3.25rem] flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
@@ -119,8 +122,8 @@ export default async function ClubDetailPage({
                   <div className="mt-5">
                     <BookingPanel
                       slots={slots}
-                      courtId={selectedCourt.id}
-                      slug={club.slug}
+                      facilityId={selectedFacility.id}
+                      slug={venue.slug}
                       isAuthenticated={!!user}
                     />
                   </div>
@@ -133,13 +136,13 @@ export default async function ClubDetailPage({
 
           {/* Info — order-2 on mobile (below booking), order-1 on lg (left) */}
           <div className="lg:order-1">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{club.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{venue.name}</h1>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-muted sm:text-base">
-              <MapPin className="h-4 w-4 shrink-0" /> {club.address}, {club.city}
+              <MapPin className="h-4 w-4 shrink-0" /> {venue.address}, {venue.city}
             </p>
-            {club.description && (
+            {venue.description && (
               <p className="mt-4 text-sm leading-relaxed text-foreground/90 sm:text-base">
-                {club.description}
+                {venue.description}
               </p>
             )}
 
@@ -164,7 +167,7 @@ export default async function ClubDetailPage({
                 {t("courts")}
               </h2>
               <div className="mt-3 space-y-2">
-                {club.courts.map((c) => (
+                {venue.facilities.map((c) => (
                   <div
                     key={c.id}
                     className="rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm"

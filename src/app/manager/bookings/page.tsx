@@ -19,34 +19,37 @@ function parseLocalDate(dateStr: string, endOfDay = false): Date {
     : new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
-export default async function ClubBookingsPage({
+export default async function ManagerBookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; courtId?: string; status?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; facilityId?: string; courtId?: string; status?: string }>;
 }) {
-  const { from, to, courtId: courtIdParam, status } = await searchParams;
-  const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/club/bookings");
+  const sp = await searchParams;
+  const { from, to, status } = sp;
+  // Accept legacy `courtId` query for back-compat with bookmarks/external links.
+  const facilityIdParam = sp.facilityId ?? sp.courtId;
+  const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/manager/bookings");
   const t = await getTranslations("club");
 
-  const CLUB_NAV = [
-    { href: "/club", label: t("overview") },
-    { href: "/club/bookings", label: t("bookings") },
+  const MANAGER_NAV = [
+    { href: "/manager", label: t("overview") },
+    { href: "/manager/bookings", label: t("bookings") },
   ];
 
-  const clubs = await prisma.club.findMany({
+  const venues = await prisma.venue.findMany({
     where: user.role === "PLATFORM_ADMIN" ? {} : { ownerId: user.id },
     select: { id: true },
   });
-  const clubIds = clubs.map((c) => c.id);
+  const venueIds = venues.map((c) => c.id);
 
-  const courts = await prisma.court.findMany({
-    where: { clubId: { in: clubIds } },
-    select: { id: true, name: true, club: { select: { name: true } } },
-    orderBy: [{ club: { name: "asc" } }, { name: "asc" }],
+  const facilities = await prisma.facility.findMany({
+    where: { venueId: { in: venueIds } },
+    select: { id: true, name: true, venue: { select: { name: true } } },
+    orderBy: [{ venue: { name: "asc" } }, { name: "asc" }],
   });
 
-  // Only filter by courtId if it belongs to this user's clubs
-  const courtId = courtIdParam && courts.some((c) => c.id === courtIdParam) ? courtIdParam : undefined;
+  // Only filter by facilityId if it belongs to this user's venues
+  const facilityId = facilityIdParam && facilities.some((c) => c.id === facilityIdParam) ? facilityIdParam : undefined;
 
   const fromDate = from ? parseLocalDate(from) : null;
   const toDate = to ? parseLocalDate(to, true) : null;
@@ -57,21 +60,21 @@ export default async function ClubBookingsPage({
 
   const bookings = await prisma.booking.findMany({
     where: {
-      court: { clubId: { in: clubIds } },
-      ...(courtId ? { courtId } : {}),
+      facility: { venueId: { in: venueIds } },
+      ...(facilityId ? { facilityId } : {}),
       ...(activeStatus ? { status: activeStatus } : {}),
       ...(Object.keys(startTimeFilter).length ? { startTime: startTimeFilter } : {}),
     },
-    include: { court: { include: { club: true } }, user: true },
+    include: { facility: { include: { venue: true } }, user: true },
     orderBy: { startTime: "desc" },
     take: 300,
   });
 
   const now = new Date();
-  const hasFilters = !!(from || to || courtId || activeStatus);
+  const hasFilters = !!(from || to || facilityId || activeStatus);
 
   return (
-    <DashboardShell title={t("bookings")} subtitle={t("allBookings")} nav={CLUB_NAV} current="/club/bookings">
+    <DashboardShell title={t("bookings")} subtitle={t("allBookings")} nav={MANAGER_NAV} current="/manager/bookings">
 
       {/* Filter bar */}
       <Card className="mb-5">
@@ -98,14 +101,14 @@ export default async function ClubBookingsPage({
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-muted">{t("court")}</label>
               <select
-                name="courtId"
-                defaultValue={courtIdParam ?? ""}
+                name="facilityId"
+                defaultValue={facilityIdParam ?? ""}
                 className="h-9 rounded-[var(--radius-md)] border border-border bg-background px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
               >
                 <option value="">{t("allCourts")}</option>
-                {courts.map((c) => (
+                {facilities.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {clubs.length > 1 ? `${c.club.name} / ${c.name}` : c.name}
+                    {venues.length > 1 ? `${c.venue.name} / ${c.name}` : c.name}
                   </option>
                 ))}
               </select>
@@ -128,7 +131,7 @@ export default async function ClubBookingsPage({
             </Button>
             {hasFilters && (
               <a
-                href="/club/bookings"
+                href="/manager/bookings"
                 className="h-9 inline-flex items-center px-3 text-sm text-muted hover:text-foreground transition-colors"
               >
                 {t("clearFilter")}
@@ -155,7 +158,7 @@ export default async function ClubBookingsPage({
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-medium">{format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}</p>
-                        <p className="mt-0.5 text-muted">{b.court.club.name} / {b.court.name}</p>
+                        <p className="mt-0.5 text-muted">{b.facility.venue.name} / {b.facility.name}</p>
                       </div>
                       <Badge tone={tone[b.status as keyof typeof tone] ?? "neutral"}>
                         {b.status.toLowerCase()}
@@ -166,7 +169,7 @@ export default async function ClubBookingsPage({
                         <p>{b.user.name}</p>
                         {b.user.phone && <p className="text-muted">{b.user.phone}</p>}
                         {b.notes && (
-                          <p className="mt-1 italic text-muted">"{b.notes}"</p>
+                          <p className="mt-1 italic text-muted">&quot;{b.notes}&quot;</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -174,7 +177,7 @@ export default async function ClubBookingsPage({
                         {b.status !== "CANCELLED" && b.endTime >= now && (
                           <form action={cancelBookingAction}>
                             <input type="hidden" name="bookingId" value={b.id} />
-                            <input type="hidden" name="redirectTo" value="/club/bookings" />
+                            <input type="hidden" name="redirectTo" value="/manager/bookings" />
                             <Button type="submit" variant="outline" size="sm">{t("cancel")}</Button>
                           </form>
                         )}
@@ -202,7 +205,7 @@ export default async function ClubBookingsPage({
                     {bookings.map((b) => (
                       <tr key={b.id} className="border-b border-border last:border-0">
                         <td className="py-2.5 pr-4 whitespace-nowrap">{format(b.startTime, "d MMM HH:mm")}–{format(b.endTime, "HH:mm")}</td>
-                        <td className="py-2.5 pr-4">{b.court.club.name} / {b.court.name}</td>
+                        <td className="py-2.5 pr-4">{b.facility.venue.name} / {b.facility.name}</td>
                         <td className="py-2.5 pr-4">
                           {b.user.name}
                           {b.user.phone ? <span className="text-muted"> · {b.user.phone}</span> : null}
@@ -220,7 +223,7 @@ export default async function ClubBookingsPage({
                           {b.status !== "CANCELLED" && b.endTime >= now && (
                             <form action={cancelBookingAction}>
                               <input type="hidden" name="bookingId" value={b.id} />
-                              <input type="hidden" name="redirectTo" value="/club/bookings" />
+                              <input type="hidden" name="redirectTo" value="/manager/bookings" />
                               <Button type="submit" variant="outline" size="sm">{t("cancel")}</Button>
                             </form>
                           )}

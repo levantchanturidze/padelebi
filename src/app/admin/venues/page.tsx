@@ -8,43 +8,43 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-import { setClubStatusAction } from "@/app/actions/admin";
-import { CLUB_STATUSES } from "@/lib/enums";
+import { setVenueStatusAction } from "@/app/actions/admin";
+import { VENUE_STATUSES } from "@/lib/enums";
 
 const tone = { APPROVED: "success", PENDING: "warning", SUSPENDED: "danger" } as const;
 const STATUS_ORDER: Record<string, number> = { PENDING: 0, APPROVED: 1, SUSPENDED: 2 };
 
-function StatusButton({ clubId, status, label, variant }: {
-  clubId: string; status: string; label: string; variant: "primary" | "outline" | "danger";
+function StatusButton({ venueId, status, label, variant }: {
+  venueId: string; status: string; label: string; variant: "primary" | "outline" | "danger";
 }) {
   return (
-    <form action={setClubStatusAction}>
-      <input type="hidden" name="clubId" value={clubId} />
+    <form action={setVenueStatusAction}>
+      <input type="hidden" name="venueId" value={venueId} />
       <input type="hidden" name="status" value={status} />
       <Button type="submit" size="sm" variant={variant}>{label}</Button>
     </form>
   );
 }
 
-export default async function AdminClubsPage({
+export default async function AdminVenuesPage({
   searchParams,
 }: {
   searchParams: Promise<{ search?: string; status?: string }>;
 }) {
-  await requireRole(["PLATFORM_ADMIN"], "/admin/clubs");
+  await requireRole(["PLATFORM_ADMIN"], "/admin/venues");
   const { search = "", status = "all" } = await searchParams;
   const t = await getTranslations("admin");
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
-    { href: "/admin/clubs", label: t("clubs") },
+    { href: "/admin/venues", label: t("clubs") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
   ];
 
-  const activeStatus = status !== "all" && CLUB_STATUSES.includes(status as never) ? status : undefined;
+  const activeStatus = status !== "all" && VENUE_STATUSES.includes(status as never) ? status : undefined;
 
-  const clubs = await prisma.club.findMany({
+  const venues = await prisma.venue.findMany({
     where: {
       ...(search ? {
         OR: [
@@ -56,19 +56,19 @@ export default async function AdminClubsPage({
       } : {}),
       ...(activeStatus ? { status: activeStatus } : {}),
     },
-    include: { owner: true, courts: true },
+    include: { owner: true, facilities: true },
     orderBy: { createdAt: "desc" },
   });
 
   // Sort: PENDING first (most urgent), then APPROVED, then SUSPENDED
   if (!activeStatus) {
-    clubs.sort((a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3));
+    venues.sort((a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3));
   }
 
   const hasFilters = !!(search || activeStatus);
 
   return (
-    <DashboardShell title={t("clubs")} subtitle={t("approvePending")} nav={ADMIN_NAV} current="/admin/clubs">
+    <DashboardShell title={t("clubs")} subtitle={t("approvePending")} nav={ADMIN_NAV} current="/admin/venues">
 
       {/* Filter bar */}
       <form method="GET" className="mb-5 flex flex-wrap items-end gap-3">
@@ -88,59 +88,59 @@ export default async function AdminClubsPage({
           className="h-9 rounded-[var(--radius-md)] border border-border bg-surface px-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
         >
           <option value="all">{t("allStatuses")}</option>
-          {CLUB_STATUSES.map((s) => (
+          {VENUE_STATUSES.map((s) => (
             <option key={s} value={s}>{s.toLowerCase()}</option>
           ))}
         </select>
         <Button type="submit" size="sm">{t("filterBtn")}</Button>
         {hasFilters && (
-          <a href="/admin/clubs" className="h-9 inline-flex items-center px-3 text-sm text-muted hover:text-foreground transition-colors">
+          <a href="/admin/venues" className="h-9 inline-flex items-center px-3 text-sm text-muted hover:text-foreground transition-colors">
             {t("clearFilter")}
           </a>
         )}
       </form>
 
-      <p className="mb-3 text-sm text-muted">{clubs.length} {t("clubsLabel").toLowerCase()}</p>
+      <p className="mb-3 text-sm text-muted">{venues.length} {t("clubsLabel").toLowerCase()}</p>
 
       <div className="space-y-3">
-        {clubs.map((club) => (
-          <Card key={club.id} className={club.status === "PENDING" ? "border-amber-200" : ""}>
+        {venues.map((venue) => (
+          <Card key={venue.id} className={venue.status === "PENDING" ? "border-amber-200" : ""}>
             <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{club.name}</span>
-                  <Badge tone={tone[club.status as keyof typeof tone] ?? "neutral"}>
-                    {club.status.toLowerCase()}
+                  <span className="font-medium">{venue.name}</span>
+                  <Badge tone={tone[venue.status as keyof typeof tone] ?? "neutral"}>
+                    {venue.status.toLowerCase()}
                   </Badge>
                 </div>
                 <p className="mt-0.5 truncate text-sm text-muted">
-                  {club.city} · {club.courts.length} courts · {club.owner.name}
-                  <span className="text-muted/70"> ({club.owner.email})</span>
+                  {venue.city} · {venue.facilities.length} courts · {venue.owner.name}
+                  <span className="text-muted/70"> ({venue.owner.email})</span>
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
-                  {t("submittedAt")} {format(club.createdAt, "d MMM yyyy")}
+                  {t("submittedAt")} {format(venue.createdAt, "d MMM yyyy")}
                 </p>
               </div>
               <div className="flex shrink-0 flex-wrap items-center gap-2">
-                {club.status === "APPROVED" && (
-                  <Link href={`/clubs/${club.slug}`} className="text-sm text-brand-600 hover:underline">
+                {venue.status === "APPROVED" && (
+                  <Link href={`/venues/${venue.slug}`} className="text-sm text-brand-600 hover:underline">
                     {t("view")}
                   </Link>
                 )}
-                {club.status !== "APPROVED" && (
-                  <StatusButton clubId={club.id} status="APPROVED" label={t("approve")} variant="primary" />
+                {venue.status !== "APPROVED" && (
+                  <StatusButton venueId={venue.id} status="APPROVED" label={t("approve")} variant="primary" />
                 )}
-                {club.status !== "SUSPENDED" ? (
-                  <StatusButton clubId={club.id} status="SUSPENDED" label={t("suspend")} variant="danger" />
+                {venue.status !== "SUSPENDED" ? (
+                  <StatusButton venueId={venue.id} status="SUSPENDED" label={t("suspend")} variant="danger" />
                 ) : (
-                  <StatusButton clubId={club.id} status="APPROVED" label={t("reinstate")} variant="outline" />
+                  <StatusButton venueId={venue.id} status="APPROVED" label={t("reinstate")} variant="outline" />
                 )}
               </div>
             </CardContent>
           </Card>
         ))}
-        {clubs.length === 0 && (
-          <p className="text-sm text-muted">{hasFilters ? "No clubs match your search." : t("noPending")}</p>
+        {venues.length === 0 && (
+          <p className="text-sm text-muted">{hasFilters ? "No venues match your search." : t("noPending")}</p>
         )}
       </div>
     </DashboardShell>

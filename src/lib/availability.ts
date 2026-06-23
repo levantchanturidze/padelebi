@@ -27,44 +27,44 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
 }
 
 /**
- * Compute bookable slots for a court on a given date from its weekly schedule,
+ * Compute bookable slots for a facility on a given date from its weekly schedule,
  * subtracting existing (non-cancelled) bookings and blackouts. Past slots are
  * marked unavailable.
  */
-export async function getCourtAvailability(
-  courtId: string,
+export async function getFacilityAvailability(
+  facilityId: string,
   date: Date,
   excludeBookingId?: string,
 ): Promise<Slot[]> {
-  const court = await prisma.court.findUnique({
-    where: { id: courtId },
+  const facility = await prisma.facility.findUnique({
+    where: { id: facilityId },
     include: {
       schedules: true,
       bookings: true,
       blackouts: true,
     },
   });
-  if (!court || !court.isActive) return [];
+  if (!facility || !facility.isActive) return [];
 
   const { dayStart, dayEnd } = dayBounds(date);
   const weekday = dayStart.getDay();
-  const schedule = court.schedules.find((s) => s.dayOfWeek === weekday);
+  const schedule = facility.schedules.find((s) => s.dayOfWeek === weekday);
   if (!schedule) return []; // closed that day
 
-  const bookings = court.bookings.filter(
+  const bookings = facility.bookings.filter(
     (b) =>
       b.status !== "CANCELLED" &&
       b.id !== excludeBookingId &&
       overlaps(b.startTime, b.endTime, dayStart, dayEnd),
   );
-  const blackouts = court.blackouts.filter((bl) =>
+  const blackouts = facility.blackouts.filter((bl) =>
     overlaps(bl.startTime, bl.endTime, dayStart, dayEnd),
   );
 
   const now = new Date();
   const slots: Slot[] = [];
   const durationHours = schedule.slotMinutes / 60;
-  const priceGEL = Math.round(court.pricePerHourGEL * durationHours);
+  const priceGEL = Math.round(facility.pricePerHourGEL * durationHours);
 
   for (let m = schedule.openMinutes; m + schedule.slotMinutes <= schedule.closeMinutes; m += schedule.slotMinutes) {
     const start = dateAtMinutes(dayStart, m);

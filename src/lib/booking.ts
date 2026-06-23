@@ -4,7 +4,7 @@ import type { SessionUser } from "./session";
 export class BookingError extends Error {}
 
 type CreateBookingInput = {
-  courtId: string;
+  facilityId: string;
   userId: string;
   startTime: Date;
   endTime: Date;
@@ -16,25 +16,25 @@ type CreateBookingInput = {
  * immediately before insert to guarantee no double-booking under concurrency.
  */
 export async function createBooking(input: CreateBookingInput) {
-  const { courtId, userId, startTime, endTime, notes } = input;
+  const { facilityId, userId, startTime, endTime, notes } = input;
 
   if (endTime <= startTime) throw new BookingError("Invalid time range.");
   if (startTime < new Date()) throw new BookingError("Cannot book a slot in the past.");
 
   return prisma.$transaction(async (tx) => {
-    const court = await tx.court.findUnique({
-      where: { id: courtId },
-      include: { club: true },
+    const facility = await tx.facility.findUnique({
+      where: { id: facilityId },
+      include: { venue: true },
     });
-    if (!court || !court.isActive) throw new BookingError("Court is not available.");
-    if (court.club.status !== "APPROVED") {
-      throw new BookingError("This club is not accepting bookings.");
+    if (!facility || !facility.isActive) throw new BookingError("Facility is not available.");
+    if (facility.venue.status !== "APPROVED") {
+      throw new BookingError("This venue is not accepting bookings.");
     }
 
     // Conflict check: any overlapping non-cancelled booking?
     const conflict = await tx.booking.findFirst({
       where: {
-        courtId,
+        facilityId,
         status: { not: "CANCELLED" },
         startTime: { lt: endTime },
         endTime: { gt: startTime },
@@ -45,25 +45,25 @@ export async function createBooking(input: CreateBookingInput) {
     // Conflict check: blackout overlap?
     const blackout = await tx.blackout.findFirst({
       where: {
-        courtId,
+        facilityId,
         startTime: { lt: endTime },
         endTime: { gt: startTime },
       },
     });
-    if (blackout) throw new BookingError("That time is blocked by the club.");
+    if (blackout) throw new BookingError("That time is blocked by the venue.");
 
     const durationHours = (endTime.getTime() - startTime.getTime()) / 3_600_000;
-    const priceGEL = Math.round(court.pricePerHourGEL * durationHours);
+    const priceGEL = Math.round(facility.pricePerHourGEL * durationHours);
 
     return tx.booking.create({
       data: {
-        courtId,
+        facilityId,
         userId,
         startTime,
         endTime,
         priceGEL,
         status: "CONFIRMED",
-        paymentStatus: "UNPAID", // Phase 1: pay at club
+        paymentStatus: "UNPAID", // Phase 1: pay at venue
         notes: notes || null,
       },
     });
@@ -76,21 +76,21 @@ export const PLAYER_CANCELLATION_WINDOW_MS = 2 * 3_600_000; // 2 hours before st
 export async function cancelBooking(bookingId: string, actor: SessionUser) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { court: { include: { club: true } } },
+    include: { facility: { include: { venue: true } } },
   });
   if (!booking) throw new BookingError("Booking not found.");
 
   const isOwner = booking.userId === actor.id;
-  const isClubAdmin =
-    actor.role === "CLUB_ADMIN" && booking.court.club.ownerId === actor.id;
+  const isVenueManager =
+    actor.role === "CLUB_ADMIN" && booking.facility.venue.ownerId === actor.id;
   const isPlatformAdmin = actor.role === "PLATFORM_ADMIN";
 
-  if (!isOwner && !isClubAdmin && !isPlatformAdmin) {
+  if (!isOwner && !isVenueManager && !isPlatformAdmin) {
     throw new BookingError("You cannot cancel this booking.");
   }
   if (booking.status === "CANCELLED") throw new BookingError("Already cancelled.");
 
-  if (isOwner && !isClubAdmin && !isPlatformAdmin) {
+  if (isOwner && !isVenueManager && !isPlatformAdmin) {
     const cutoff = booking.startTime.getTime() - PLAYER_CANCELLATION_WINDOW_MS;
     if (Date.now() > cutoff) {
       throw new BookingError(
@@ -118,7 +118,7 @@ export async function rescheduleBooking({
 }) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { court: true },
+    include: { facility: true },
   });
 
   if (!booking) throw new BookingError("Booking not found.");
@@ -153,7 +153,7 @@ export async function rescheduleBooking({
 
     const conflict = await tx.booking.findFirst({
       where: {
-        courtId: booking.courtId,
+        facilityId: booking.facilityId,
         id: { not: bookingId },
         status: { not: "CANCELLED" },
         startTime: { lt: newEndTime },
@@ -164,21 +164,21 @@ export async function rescheduleBooking({
 
     const blackout = await tx.blackout.findFirst({
       where: {
-        courtId: booking.courtId,
+        facilityId: booking.facilityId,
         startTime: { lt: newEndTime },
         endTime: { gt: newStartTime },
       },
     });
-    if (blackout) throw new BookingError("That time is blocked by the club.");
+    if (blackout) throw new BookingError("That time is blocked by the venue.");
 
     const durationHours = newDuration / 3_600_000;
-    const priceGEL = Math.round(booking.court.pricePerHourGEL * durationHours);
+    const priceGEL = Math.round(booking.facility.pricePerHourGEL * durationHours);
 
     await tx.booking.update({ where: { id: bookingId }, data: { status: "CANCELLED" } });
 
     return tx.booking.create({
       data: {
-        courtId: booking.courtId,
+        facilityId: booking.facilityId,
         userId,
         startTime: newStartTime,
         endTime: newEndTime,

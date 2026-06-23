@@ -24,12 +24,12 @@ function durationLabel(slotMs: number, numSlots: number): string {
 
 export function BookingPanel({
   slots,
-  courtId,
+  facilityId,
   slug,
   isAuthenticated,
 }: {
   slots: ClientSlot[];
-  courtId: string;
+  facilityId: string;
   slug: string;
   isAuthenticated: boolean;
 }) {
@@ -141,7 +141,7 @@ export function BookingPanel({
           action={action}
           className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(21,163,71,0.13)]"
         >
-          <input type="hidden" name="courtId" value={courtId} />
+          <input type="hidden" name="facilityId" value={facilityId} />
           <input type="hidden" name="slug" value={slug} />
           <input type="hidden" name="start" value={startSlot.start} />
           <input type="hidden" name="end" value={endSlot.end} />

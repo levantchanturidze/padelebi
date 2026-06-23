@@ -1,9 +1,12 @@
-// Padelebi — data model
-// NOTE: provider is "sqlite" for local development. For production (Render Postgres),
-// change provider to "postgresql" and set DATABASE_URL accordingly, then run a migration.
-// The schema is written portably: enum-like fields are Strings (validated in app code
-// via src/lib/enums.ts + zod) and list/object fields are JSON-encoded Strings, so the
-// same schema works on both SQLite and Postgres.
+// Padelebi → Sports venue marketplace data model.
+//
+// Phase 1 rename: Club → Venue, Court → Facility, CourtSchedule → FacilitySchedule.
+// Existing tables are preserved via @@map / @map so production data is not touched;
+// only a new Sport table and a Facility.sportId column are added.
+//
+// Enum-like fields stay as Strings (validated in app code via src/lib/enums.ts) and
+// list/object fields are JSON-encoded Strings, so the same schema works on SQLite
+// (local dev) and Postgres (prod).
 
 generator client {
   provider = "prisma-client-js"
@@ -12,6 +15,21 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Sport {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  icon      String // lucide icon name
+  category  String // RACQUET | TEAM | INDIVIDUAL | FITNESS | WATER
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  facilities Facility[]
+
+  @@index([category, isActive])
 }
 
 model User {
@@ -25,13 +43,13 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  clubs       Club[]               @relation("ClubOwner")
+  venues      Venue[]              @relation("VenueOwner")
   bookings    Booking[]
   reviews     Review[]
   resetTokens PasswordResetToken[]
 }
 
-model Club {
+model Venue {
   id           String   @id @default(cuid())
   name         String
   slug         String   @unique
@@ -47,50 +65,56 @@ model Club {
   ownerId      String
   createdAt    DateTime @default(now())
 
-  owner   User     @relation("ClubOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  courts  Court[]
-  reviews Review[]
+  owner      User       @relation("VenueOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  facilities Facility[]
+  reviews    Review[]
 
   @@index([city])
   @@index([status])
+  @@map("Club")
 }
 
-model Court {
-  id             String   @id @default(cuid())
-  clubId         String
-  name           String
-  surface        String   @default("ARTIFICIAL_GRASS") // ARTIFICIAL_GRASS | CONCRETE | PANORAMIC
-  isIndoor       Boolean  @default(false)
-  pricePerHourGEL Int     @default(40)
-  isActive       Boolean  @default(true)
-  photos         String   @default("[]") // JSON string[] of image URLs
-  createdAt      DateTime @default(now())
+model Facility {
+  id              String   @id @default(cuid())
+  venueId         String   @map("clubId")
+  sportId         String
+  name            String
+  surface         String   @default("ARTIFICIAL_GRASS") // padel-only for now; moves to attributes JSON in Phase 2
+  isIndoor        Boolean  @default(false)
+  pricePerHourGEL Int      @default(40)
+  isActive        Boolean  @default(true)
+  photos          String   @default("[]") // JSON string[]
+  createdAt       DateTime @default(now())
 
-  club      Club            @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  schedules CourtSchedule[]
+  venue     Venue              @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  sport     Sport              @relation(fields: [sportId], references: [id])
+  schedules FacilitySchedule[]
   bookings  Booking[]
   blackouts Blackout[]
 
-  @@index([clubId])
+  @@index([venueId])
+  @@index([sportId, isActive])
+  @@map("Court")
 }
 
-// Weekly availability template per court used to generate bookable slots.
-model CourtSchedule {
+// Weekly availability template per facility used to generate bookable slots.
+model FacilitySchedule {
   id           String @id @default(cuid())
-  courtId      String
+  facilityId   String @map("courtId")
   dayOfWeek    Int // 0 = Sunday ... 6 = Saturday
   openMinutes  Int // minutes from midnight, e.g. 480 = 08:00
   closeMinutes Int // e.g. 1320 = 22:00
-  slotMinutes  Int @default(60)
+  slotMinutes  Int    @default(60)
 
-  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
 
-  @@unique([courtId, dayOfWeek])
+  @@unique([facilityId, dayOfWeek])
+  @@map("CourtSchedule")
 }
 
 model Booking {
   id            String   @id @default(cuid())
-  courtId       String
+  facilityId    String   @map("courtId")
   userId        String
   startTime     DateTime
   endTime       DateTime
@@ -100,25 +124,25 @@ model Booking {
   notes         String?
   createdAt     DateTime @default(now())
 
-  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([courtId, startTime])
+  @@index([facilityId, startTime])
   @@index([userId])
 }
 
 // Time ranges blocked from booking (maintenance, private events).
 model Blackout {
-  id        String   @id @default(cuid())
-  courtId   String
-  startTime DateTime
-  endTime   DateTime
-  reason    String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  facilityId String   @map("courtId")
+  startTime  DateTime
+  endTime    DateTime
+  reason     String?
+  createdAt  DateTime @default(now())
 
-  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  facility Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
 
-  @@index([courtId, startTime])
+  @@index([facilityId, startTime])
 }
 
 model PasswordResetToken {
@@ -133,14 +157,14 @@ model PasswordResetToken {
 
 model Review {
   id        String   @id @default(cuid())
-  clubId    String
+  venueId   String   @map("clubId")
   userId    String
   rating    Int // 1..5
   comment   String   @default("")
   createdAt DateTime @default(now())
 
-  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([clubId, userId])
+  @@unique([venueId, userId])
 }
