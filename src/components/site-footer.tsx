@@ -26,7 +26,7 @@ export async function SiteFooter() {
           </nav>
         </div>
         <div className="mt-6 flex items-center justify-between border-t border-border pt-5 text-xs text-muted/70">
-          <p>© {new Date().getFullYear()} Padelebi. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Playtora. All rights reserved.</p>
           <div className="flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
             <span>Georgia</span>

@@ -12,9 +12,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Padelebi — Book padel courts across Georgia",
+  title: "Playtora — Find and book sports venues",
   description:
-    "Find and book padel courts in Tbilisi, Batumi and across Georgia. Real-time availability, instant booking.",
+    "Discover and book padel, tennis, football and more — real-time availability, instant booking, any sport.",
 };
 
 export default async function RootLayout({

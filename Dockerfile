@@ -1,4 +1,4 @@
-# Padelebi — production image (Next.js standalone)
+# Playtora — production image (Next.js standalone)
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./

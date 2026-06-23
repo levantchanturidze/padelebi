@@ -171,7 +171,7 @@
     "noAccount": "No account?",
     "createOne": "Create one",
     "createAccount": "Create your account",
-    "registerDesc": "Join Padelebi to book courts or list your club.",
+    "registerDesc": "Join Playtora to book sports venues or list your own.",
     "fullName": "Full name",
     "confirmPassword": "Confirm password",
     "iWantTo": "I want to…",
@@ -194,7 +194,7 @@
   },
   "admin": {
     "title": "Platform admin",
-    "desc": "Oversee clubs, users and activity across Padelebi.",
+    "desc": "Oversee venues, users and activity across Playtora.",
     "overview": "Overview",
     "clubs": "Clubs",
     "users": "Users",

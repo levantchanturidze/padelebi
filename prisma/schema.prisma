@@ -1,4 +1,4 @@
-// Padelebi → Sports venue marketplace data model.
+// Playtora — multi-sport venue marketplace data model.
 //
 // Phase 1 rename: Club → Venue, Court → Facility, CourtSchedule → FacilitySchedule.
 // Existing tables are preserved via @@map / @map so production data is not touched;

@@ -30,7 +30,7 @@ function fullWeekSchedule(slotMinutes = 90) {
 }
 
 async function main() {
-  console.log("Seeding Padelebi…");
+  console.log("Seeding Playtora…");
 
   // Clean slate (dev only). Order respects FK constraints; Sport is kept (catalog).
   await prisma.booking.deleteMany();
@@ -62,7 +62,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: "Platform Admin",
-      email: "admin@padelebi.ge",
+      email: "admin@playtora.app",
       passwordHash,
       role: "PLATFORM_ADMIN",
     },
@@ -71,7 +71,7 @@ async function main() {
   const owner = await prisma.user.create({
     data: {
       name: "Nino Venue Owner",
-      email: "club@padelebi.ge",
+      email: "club@playtora.app",
       passwordHash,
       role: "CLUB_ADMIN",
       phone: "+995 555 10 20 30",
@@ -81,7 +81,7 @@ async function main() {
   const player = await prisma.user.create({
     data: {
       name: "Giorgi Player",
-      email: "player@padelebi.ge",
+      email: "player@playtora.app",
       passwordHash,
       role: "PLAYER",
       phone: "+995 555 40 50 60",
@@ -206,9 +206,9 @@ async function main() {
   console.log("Seed complete.");
   console.log(`  ${SPORTS.length} sports, 3 venues, ${facilities.length} facilities`);
   console.log("Logins (password: password123):");
-  console.log("  Platform admin: admin@padelebi.ge");
-  console.log("  Venue manager:  club@padelebi.ge");
-  console.log("  Player:         player@padelebi.ge");
+  console.log("  Platform admin: admin@playtora.app");
+  console.log("  Venue manager:  club@playtora.app");
+  console.log("  Player:         player@playtora.app");
 
   void admin; // referenced for clarity above
   void player;

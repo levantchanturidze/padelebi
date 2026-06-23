@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    // Phase 1 rename: preserve old URLs from when the app was "Padelebi padel-only".
+    // Phase 1 rename: preserve old URLs from when the app was Padelebi (padel-only).
     // Query strings are preserved automatically by Next.
     return [
       // Public listing: /clubs → /venues

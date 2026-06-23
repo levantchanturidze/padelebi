@@ -19,7 +19,7 @@ export function Logo({ className, light = false }: { className?: string; light?:
         P
       </span>
       <span className={cn("text-lg", light ? "text-white" : "text-foreground")}>
-        Padelebi
+        Playtora
       </span>
     </Link>
   );
