@@ -8,6 +8,9 @@
    - Cobalt (secondary): links, B2B / manager UI, trust signals
    Volt is the brand's signature — restricted to action, never decorative.
 --------------------------------------------------------------------------- */
+/* Tailwind v4 dark-mode trigger — `.dark` class on <html>. */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-background: #F7F6F2;   /* Bone */
   --color-surface:    #FFFFFF;
@@ -51,6 +54,34 @@
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   Dark mode — flips Bone ↔ Obsidian. Volt + Cobalt + semantic colors stay
+   the same because they were chosen to read on dark surfaces already.
+   Activated by adding `class="dark"` on <html> via the boot script.
+--------------------------------------------------------------------------- */
+:where(.dark) {
+  --color-background: #0B0E14;   /* Obsidian — flipped */
+  --color-surface:    #14181F;   /* slightly lighter, near-Obsidian */
+  --color-foreground: #F7F6F2;   /* Bone — flipped */
+  --color-muted:      #8B92A0;   /* lifted muted for legibility */
+  --color-border:     #232934;   /* Obsidian-on-Obsidian divider */
+
+  /* Volt scale slightly toned on dark backgrounds — primary 500 unchanged
+     so brand chrome reads identically; 50/100 darker so tinted surfaces
+     don't blow out on dark mode. */
+  --color-brand-50:  #18250B;
+  --color-brand-100: #243C13;
+  --color-brand-200: #36591F;
+
+  /* Cobalt — softer 50/100 for dark; 500 unchanged. */
+  --color-cobalt-50:  #161E3D;
+  --color-cobalt-100: #1F2A55;
+  --color-cobalt-200: #324079;
+
+  /* Success — lift the green so it pops against Obsidian. */
+  --color-success: #34D399;
 }
 
 * {
@@ -146,6 +177,18 @@ body {
 }
 .shadow-card-lg {
   box-shadow: 0 8px 28px rgba(11, 14, 20, 0.10), 0 2px 6px rgba(11, 14, 20, 0.06);
+}
+
+/* In dark mode, opaque-black shadows mostly disappear. Replace with
+   subtle highlight (Volt at very low opacity) for the lifted feel. */
+:where(.dark) .shadow-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+:where(.dark) .shadow-card-md {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+:where(.dark) .shadow-card-lg {
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 /* ── Focus ring — Cobalt for accessible, calm focus state ──────────────── */

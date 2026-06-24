@@ -32,7 +32,7 @@ function StatCard({
     <Card className={[
       "transition-all duration-150",
       href ? "hover:shadow-card-md" : "",
-      accent ? "border-brand-200 bg-gradient-to-br from-brand-50 to-white" : "",
+      accent ? "border-brand-200 bg-gradient-to-br from-brand-50 to-surface" : "",
       warn ? "border-warning/40 bg-amber-50" : "",
     ].join(" ")}>
       <CardContent>
@@ -160,7 +160,7 @@ export default async function AdminOverviewPage() {
               {pendingVenuesList.map((venue) => (
                 <div
                   key={venue.id}
-                  className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-border bg-surface p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <p className="font-medium">{venue.name}</p>

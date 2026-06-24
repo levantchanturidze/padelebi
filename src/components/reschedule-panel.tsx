@@ -121,7 +121,7 @@ export function ReschedulePanel({
 
       {/* Confirm card */}
       {newStartISO && newEndISO && (
-        <div className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]">
+        <div className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-surface to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]">
           {isSameSlot ? (
             <p className="px-4 py-4 text-sm text-muted">{t("sameSlot")}</p>
           ) : (

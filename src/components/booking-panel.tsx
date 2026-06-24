@@ -139,7 +139,7 @@ export function BookingPanel({
       {startSlot && endSlot && (
         <form
           action={action}
-          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]"
+          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-surface to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]"
         >
           <input type="hidden" name="facilityId" value={facilityId} />
           <input type="hidden" name="slug" value={slug} />
@@ -165,7 +165,7 @@ export function BookingPanel({
               name="notes"
               rows={2}
               placeholder={t("notesPlaceholder")}
-              className="mt-3 w-full resize-none rounded-[var(--radius-md)] border border-border bg-white/80 px-3 py-2 text-sm placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              className="mt-3 w-full resize-none rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
           </div>
 

@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
+import { ThemeScript } from "@/components/theme/theme-script";
 import { getCurrentUser } from "@/lib/session";
 import { SITE_URL, SITE_NAME, TWITTER_HANDLE, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import {
+  THEME_COOKIE,
+  isThemePref,
+  resolveThemeForServer,
+} from "@/lib/theme";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -39,17 +46,35 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [user, locale, messages] = await Promise.all([
+  const [user, locale, messages, cookieStore] = await Promise.all([
     getCurrentUser(),
     getLocale(),
     getMessages(),
+    cookies(),
   ]);
+
+  // Server-side theme decision. The inline ThemeScript will correct
+  // `system` against the live OS preference before paint if needed.
+  const themeCookie = cookieStore.get(THEME_COOKIE)?.value;
+  const serverTheme = resolveThemeForServer(
+    isThemePref(themeCookie) ? themeCookie : undefined,
+  );
 
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={[
+        geistSans.variable,
+        geistMono.variable,
+        "h-full antialiased",
+        serverTheme === "dark" ? "dark" : "",
+      ].join(" ")}
+      style={{ colorScheme: serverTheme }}
+      suppressHydrationWarning
     >
+      <head>
+        <ThemeScript />
+      </head>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
           <SiteHeader user={user} locale={locale} />

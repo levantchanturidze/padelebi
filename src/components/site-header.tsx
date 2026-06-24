@@ -5,6 +5,7 @@ import { Container } from "./ui/container";
 import { LinkButton } from "./ui/button";
 import { LocaleSwitcher } from "./locale-switcher";
 import { MobileMenu } from "./mobile-menu";
+import { ThemeToggle } from "./theme/theme-toggle";
 import { logoutAction } from "@/app/actions/auth";
 import type { SessionUser } from "@/lib/session";
 
@@ -39,6 +40,7 @@ export async function SiteHeader({ user, locale }: { user: SessionUser | null; l
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LocaleSwitcher current={locale} />
           {user ? (
             <form action={logoutAction} className="hidden md:block">

@@ -102,6 +102,11 @@
     "popularSports": "Popular sports",
     "backHome": "Back to home"
   },
+  "theme": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System theme"
+  },
   "geo": {
     "useMyLocation": "Use my location",
     "finding": "Finding you…",

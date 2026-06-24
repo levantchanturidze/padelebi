@@ -32,7 +32,7 @@ export function DashboardShell({
               href={item.href}
               className={[
                 "whitespace-nowrap rounded-[var(--radius-md)] px-4 py-2 text-sm font-medium transition-colors",
-                active ? "bg-brand-500 text-white" : "text-muted hover:text-foreground",
+                active ? "bg-brand-500 text-foreground" : "text-muted hover:text-foreground",
               ].join(" ")}
             >
               {item.label}
@@ -50,7 +50,7 @@ export function DashboardShell({
                 href={item.href}
                 className={[
                   "rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-brand-50 text-brand-700" : "text-muted hover:bg-background hover:text-foreground",
+                  active ? "bg-brand-50 text-foreground" : "text-muted hover:bg-background hover:text-foreground",
                 ].join(" ")}
               >
                 {item.label}

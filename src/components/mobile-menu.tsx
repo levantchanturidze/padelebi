@@ -124,8 +124,8 @@ function MobileLink({ href, children }: { href: string; children: React.ReactNod
       className={[
         "block rounded-[var(--radius-md)] px-3 py-2.5 text-sm font-medium transition-colors",
         active
-          ? "bg-brand-50 text-brand-700"
-          : "text-foreground hover:bg-background hover:text-brand-600",
+          ? "bg-brand-50 text-foreground"
+          : "text-foreground hover:bg-background hover:text-foreground",
       ].join(" ")}
     >
       {children}

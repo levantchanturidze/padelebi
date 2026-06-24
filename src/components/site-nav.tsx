@@ -42,7 +42,7 @@ export function SiteNav({ role }: { role: string }) {
               className={[
                 "rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors",
                 active
-                  ? "bg-brand-50 text-brand-700"
+                  ? "bg-brand-50 text-foreground"
                   : "text-muted hover:bg-background hover:text-foreground",
               ].join(" ")}
             >

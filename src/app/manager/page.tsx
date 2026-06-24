@@ -26,7 +26,7 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <Card className={accent ? "border-brand-200 bg-gradient-to-br from-brand-50 to-white" : ""}>
+    <Card className={accent ? "border-brand-200 bg-gradient-to-br from-brand-50 to-surface" : ""}>
       <CardContent>
         <div className="flex items-start justify-between gap-3">
           <div>

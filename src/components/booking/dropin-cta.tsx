@@ -47,7 +47,7 @@ export function DropInCta({
 
       <form
         action={action}
-        className="overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(21,163,71,0.13)]"
+        className="overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-surface to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]"
       >
         <input type="hidden" name="facilityId" value={facilityId} />
         <input type="hidden" name="slug" value={slug} />
@@ -64,7 +64,7 @@ export function DropInCta({
               value={date}
               min={todayStr}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 h-9 w-full rounded-[var(--radius-md)] border border-border bg-white/80 px-2 text-sm"
+              className="mt-1 h-9 w-full rounded-[var(--radius-md)] border border-border bg-surface px-2 text-sm text-foreground"
             />
           </label>
 
