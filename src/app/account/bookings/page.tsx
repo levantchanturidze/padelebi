@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { cancelBookingAction } from "@/app/actions/booking";
 import { formatGEL } from "@/lib/utils";
+import { userAreaNav } from "@/lib/user-nav";
+import { getTranslations as getRootT } from "next-intl/server";
 
 function BookingRow({
   booking,
@@ -74,12 +76,12 @@ export default async function MyBookingsPage({
 }) {
   const user = await requireUser("/account/bookings");
   const { booked, error } = await searchParams;
-  const t = await getTranslations("accountBookings");
+  const [t, tNav] = await Promise.all([
+    getTranslations("accountBookings"),
+    getRootT("nav"),
+  ]);
 
-  const ACCOUNT_NAV = [
-    { href: "/account/bookings", label: t("title") },
-    { href: "/account/profile", label: t("profile") },
-  ];
+  const ACCOUNT_NAV = userAreaNav(tNav, user.role);
 
   const bookings = await prisma.booking.findMany({
     where: { userId: user.id },

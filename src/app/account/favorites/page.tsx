@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { tSportName } from "@/lib/sports";
+import { userAreaNav } from "@/lib/user-nav";
 
 /**
  * Favorites — server-rendered grid with a heart button per card. We don't
@@ -19,16 +20,12 @@ import { tSportName } from "@/lib/sports";
  */
 export default async function FavoritesPage() {
   const user = await requireUser("/account/favorites");
-  const [t, tBookings] = await Promise.all([
+  const [t, tNav] = await Promise.all([
     getTranslations(),
-    getTranslations("accountBookings"),
+    getTranslations("nav"),
   ]);
 
-  const ACCOUNT_NAV = [
-    { href: "/account/bookings", label: tBookings("title") },
-    { href: "/account/favorites", label: t("favorites.title") },
-    { href: "/account/profile", label: tBookings("profile") },
-  ];
+  const ACCOUNT_NAV = userAreaNav(tNav, user.role);
 
   const favorites = await prisma.favorite.findMany({
     where: { userId: user.id },

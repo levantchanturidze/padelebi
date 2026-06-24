@@ -5,18 +5,17 @@ import { ProfileForm } from "@/components/profile-form";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { userAreaNav } from "@/lib/user-nav";
 
 export default async function ProfilePage() {
   const sessionUser = await requireUser("/account/profile");
-  const [user, t] = await Promise.all([
+  const [user, t, tNav] = await Promise.all([
     prisma.user.findUnique({ where: { id: sessionUser.id } }),
     getTranslations("profile"),
+    getTranslations("nav"),
   ]);
 
-  const ACCOUNT_NAV = [
-    { href: "/account/bookings", label: t("myBookings") },
-    { href: "/account/profile", label: t("title") },
-  ];
+  const ACCOUNT_NAV = userAreaNav(tNav, sessionUser.role);
 
   return (
     <DashboardShell title={t("title")} nav={ACCOUNT_NAV} current="/account/profile">

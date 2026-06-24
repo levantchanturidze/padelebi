@@ -6,28 +6,8 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Menu, X } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
-
-function roleLinks(role: string, t: ReturnType<typeof useTranslations<"nav">>) {
-  switch (role) {
-    case "PLATFORM_ADMIN":
-      return [
-        { href: "/admin", label: t("admin") },
-        { href: "/account/bookings", label: t("myBookings") },
-        { href: "/account/favorites", label: t("favorites") },
-      ];
-    case "CLUB_ADMIN":
-      return [
-        { href: "/manager", label: t("clubDashboard") },
-        { href: "/account/bookings", label: t("myBookings") },
-        { href: "/account/favorites", label: t("favorites") },
-      ];
-    default:
-      return [
-        { href: "/account/bookings", label: t("myBookings") },
-        { href: "/account/favorites", label: t("favorites") },
-      ];
-  }
-}
+import { userAreaNav } from "@/lib/user-nav";
+import type { Role } from "@/lib/enums";
 
 export function MobileMenu({
   role,
@@ -49,7 +29,7 @@ export function MobileMenu({
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  const dashLinks = role ? roleLinks(role, t) : [];
+  const dashLinks = role ? userAreaNav(t, role as Role) : [];
 
   return (
     <>
