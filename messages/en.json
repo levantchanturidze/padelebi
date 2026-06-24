@@ -94,6 +94,17 @@
     "noVenuesWithCoords": "These venues don't have coordinates yet.",
     "viewVenue": "View venue"
   },
+  "geo": {
+    "useMyLocation": "Use my location",
+    "finding": "Finding you…",
+    "nearMe": "Near me",
+    "clearLocation": "Clear location",
+    "retry": "Retry",
+    "permissionDenied": "Location permission denied. Enable it in your browser to use this feature.",
+    "unavailable": "Location is unavailable on this device.",
+    "anyDistance": "Any",
+    "distanceLabel": "Distance from you"
+  },
   "clubDetail": {
     "amenities": "Amenities",
     "courts": "Facilities",

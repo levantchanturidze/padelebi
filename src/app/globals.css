@@ -197,6 +197,34 @@ body {
   background: var(--color-foreground);
 }
 
+.playtora-user-pin {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+}
+.playtora-user-pin__halo {
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  background: rgba(42, 79, 255, 0.20);
+  animation: playtora-pulse 1.6s ease-out infinite;
+}
+.playtora-user-pin__dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-cobalt-500);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(11, 14, 20, 0.35);
+}
+@keyframes playtora-pulse {
+  0%   { transform: scale(0.6); opacity: 0.55; }
+  100% { transform: scale(1.6); opacity: 0;    }
+}
+
 .maplibregl-popup-content {
   border-radius: var(--radius-md) !important;
   padding: 0.75rem 0.875rem !important;

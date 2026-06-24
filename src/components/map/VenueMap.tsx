@@ -6,6 +6,7 @@ import maplibregl, { type Map as MapLibreMap, type LngLatBoundsLike } from "mapl
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useMapSync } from "./sync-context";
+import { usePosition } from "./use-position";
 import type { MapVenue } from "./types";
 import { GEORGIA_CENTER, GEORGIA_DEFAULT_ZOOM } from "@/lib/city-map";
 import { formatGEL } from "@/lib/utils";
@@ -31,7 +32,9 @@ export function VenueMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const { activeId, setActiveId } = useMapSync();
+  const { position } = usePosition();
 
   // ── Initial map mount (once) ────────────────────────────────────────────
   useEffect(() => {
@@ -134,6 +137,34 @@ export function VenueMap({
     if (map.loaded()) ready();
     else map.once("load", ready);
   }, [venues, initialCenter, setActiveId]);
+
+  // ── User-position pin ──────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!position) {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      return;
+    }
+
+    if (!userMarkerRef.current) {
+      const el = document.createElement("div");
+      el.className = "playtora-user-pin";
+      el.innerHTML = `<span class="playtora-user-pin__halo"></span><span class="playtora-user-pin__dot"></span>`;
+      userMarkerRef.current = new maplibregl.Marker({ element: el })
+        .setLngLat([position.lng, position.lat])
+        .addTo(map);
+    } else {
+      userMarkerRef.current.setLngLat([position.lng, position.lat]);
+    }
+
+    // Pan to user once if no explicit center was given and we don't have venues to fit.
+    if (!initialCenter && venues.length === 0) {
+      map.flyTo({ center: [position.lng, position.lat], zoom: 13, duration: 600 });
+    }
+  }, [position, initialCenter, venues.length]);
 
   // ── Highlight the active marker when card hover changes ─────────────────
   useEffect(() => {

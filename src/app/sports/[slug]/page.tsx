@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SportBadge } from "@/components/sport/sport-badge";
+import { VenuesView, VenueCardSync } from "@/components/map/VenuesView";
+import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { tSportName } from "@/lib/sports";
@@ -61,6 +63,80 @@ export default async function SportDetailPage({
         ? t("sportsPage.venuesOne")
         : t("sportsPage.venuesMany", { count: venues.length });
 
+  const mapVenues: MapVenue[] = venues
+    .filter((v): v is typeof v & { lat: number; lng: number } =>
+      typeof v.lat === "number" && typeof v.lng === "number",
+    )
+    .map((v) => {
+      const minPrice = v.facilities.length
+        ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL))
+        : null;
+      return {
+        id: v.id,
+        slug: v.slug,
+        name: v.name,
+        city: v.city,
+        lat: v.lat,
+        lng: v.lng,
+        minPriceGEL: minPrice,
+        sports: [{ slug: sport.slug, name: sportName }],
+        primarySportSlug: sport.slug,
+      };
+    });
+
+  const venueDetails = new Map(
+    venues.map((v) => [
+      v.id,
+      {
+        photos: parseJSON<string[]>(v.photos, []),
+        minPrice: v.facilities.length ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL)) : null,
+        facilityCount: v.facilities.length,
+      },
+    ]),
+  );
+
+  const renderList = (vs: (typeof mapVenues[number] & { distanceKm?: number })[]) => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {vs.map((v) => {
+        const det = venueDetails.get(v.id);
+        if (!det) return null;
+        const facilityCountLabel =
+          det.facilityCount === 1
+            ? t("sportsPage.facilitiesOne")
+            : t("sportsPage.facilitiesMany", { count: det.facilityCount });
+        return (
+          <VenueCardSync key={v.id} venueId={v.id} distanceKm={v.distanceKm}>
+            <Link href={`/venues/${v.slug}`}>
+              <Card className="overflow-hidden transition-shadow hover:shadow-md">
+                <div
+                  className="h-40 bg-brand-100 bg-cover bg-center"
+                  style={det.photos[0] ? { backgroundImage: `url(${det.photos[0]})` } : undefined}
+                />
+                <CardContent>
+                  <h3 className="font-semibold">{v.name}</h3>
+                  <p className="mt-1 flex items-center gap-1 text-sm text-muted">
+                    <MapPin className="h-3.5 w-3.5" /> {v.city}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <SportBadge name={sportName} slug={sport.slug} />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge tone="brand">{facilityCountLabel}</Badge>
+                    {det.minPrice !== null && (
+                      <span className="text-sm font-medium">
+                        {t("favorites.fromPrice", { price: formatGEL(det.minPrice) })}
+                      </span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </VenueCardSync>
+        );
+      })}
+    </div>
+  );
+
   return (
     <Container className="py-8 sm:py-12">
       <Link
@@ -78,7 +154,7 @@ export default async function SportDetailPage({
         </div>
         <Link
           href={`/venues?sport=${sport.slug}`}
-          className="text-sm font-medium text-brand-600 hover:underline"
+          className="text-sm font-medium text-cobalt-600 hover:underline"
         >
           {t("sportsPage.advancedSearch")} →
         </Link>
@@ -87,54 +163,16 @@ export default async function SportDetailPage({
       {venues.length === 0 ? (
         <Card className="mt-10">
           <CardContent className="text-center text-sm text-muted">
-            {t.rich("sportsPage.noVenuesForSport", {
-              sport: sportName,
-            })}{" "}
-            <Link href="/register" className="text-brand-600 hover:underline">
+            {t.rich("sportsPage.noVenuesForSport", { sport: sportName })}{" "}
+            <Link href="/register" className="text-cobalt-600 hover:underline">
               {t("sportsPage.listYours")}
             </Link>
             .
           </CardContent>
         </Card>
       ) : (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {venues.map((venue) => {
-            const photos = parseJSON<string[]>(venue.photos, []);
-            const minPrice = venue.facilities.length
-              ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL))
-              : null;
-            const facilityCountLabel =
-              venue.facilities.length === 1
-                ? t("sportsPage.facilitiesOne")
-                : t("sportsPage.facilitiesMany", { count: venue.facilities.length });
-            return (
-              <Link key={venue.id} href={`/venues/${venue.slug}`}>
-                <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                  <div
-                    className="h-40 bg-brand-100 bg-cover bg-center"
-                    style={photos[0] ? { backgroundImage: `url(${photos[0]})` } : undefined}
-                  />
-                  <CardContent>
-                    <h3 className="font-semibold">{venue.name}</h3>
-                    <p className="mt-1 flex items-center gap-1 text-sm text-muted">
-                      <MapPin className="h-3.5 w-3.5" /> {venue.city}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <SportBadge name={sportName} slug={sport.slug} />
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <Badge tone="brand">{facilityCountLabel}</Badge>
-                      {minPrice !== null && (
-                        <span className="text-sm font-medium">
-                          {t("favorites.fromPrice", { price: formatGEL(minPrice) })}
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+        <div className="mt-8">
+          <VenuesView renderList={renderList} venues={mapVenues} />
         </div>
       )}
     </Container>

@@ -1,44 +1,104 @@
 "use client";
 
-import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useMemo, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import dynamic from "next/dynamic";
 import { List, Map as MapIcon } from "lucide-react";
 import { MapSyncProvider, useMapSync } from "./sync-context";
+import { PositionProvider, usePosition } from "./use-position";
+import { NearMeButton } from "./NearMeButton";
+import { RadiusFilter } from "./RadiusFilter";
 import type { MapVenue } from "./types";
+import { distanceKm, formatDistance } from "@/lib/geo";
 
-// Map is client-only and lazy-loaded (~200KB gzip)
 const VenueMap = dynamic(() => import("./VenueMap").then((m) => m.VenueMap), {
   ssr: false,
-  loading: () => (
-    <div className="h-full w-full animate-pulse bg-background" />
-  ),
+  loading: () => <div className="h-full w-full animate-pulse bg-background" />,
 });
 
 /**
- * Layout for /venues:
- *   - Desktop (lg+): list on the left, sticky map on the right
- *   - Mobile: tab toggle (List | Map), one full-screen at a time
+ * Layout for venue-listing surfaces (/venues, /sports/[slug], /account/favorites).
  *
- * Wraps both surfaces in the MapSyncProvider so card hover ↔ pin highlight
- * works across the two panels.
+ * Renders the `list` prop (which the parent built server-side with cards) plus
+ * the interactive map. Wraps both in PositionProvider + MapSyncProvider so
+ * geolocation state and card↔pin hover sync work across the two panels.
+ *
+ * `renderList` is called with the (possibly distance-sorted + radius-filtered)
+ * venues so the parent can re-render its cards accordingly. If the parent
+ * doesn't care about distance, it can pass a `list` ReactNode instead.
  */
 export function VenuesView({
-  list,
   venues,
   initialCenter,
   initialZoom,
+  renderList,
+  list,
 }: {
-  list: React.ReactNode;
   venues: MapVenue[];
   initialCenter?: [number, number];
   initialZoom?: number;
+  /** Re-renders when the venue list is re-sorted/filtered by distance. */
+  renderList?: (venues: MapVenue[]) => React.ReactNode;
+  /** Static list (used when distance sorting isn't needed). */
+  list?: React.ReactNode;
+}) {
+  return (
+    <PositionProvider>
+      <MapSyncProvider>
+        <VenuesViewInner
+          venues={venues}
+          initialCenter={initialCenter}
+          initialZoom={initialZoom}
+          renderList={renderList}
+          list={list}
+        />
+      </MapSyncProvider>
+    </PositionProvider>
+  );
+}
+
+function VenuesViewInner({
+  venues,
+  initialCenter,
+  initialZoom,
+  renderList,
+  list,
+}: {
+  venues: MapVenue[];
+  initialCenter?: [number, number];
+  initialZoom?: number;
+  renderList?: (venues: MapVenue[]) => React.ReactNode;
+  list?: React.ReactNode;
 }) {
   const t = useTranslations("map");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [radiusKm, setRadiusKm] = useState<number | null>(null);
+  const { position } = usePosition();
+
+  /**
+   * Annotate each venue with distance (if position known), then sort and
+   * radius-filter. Pure derived state — recomputes whenever position,
+   * venues, or radius changes.
+   */
+  const displayVenues = useMemo(() => {
+    if (!position) return venues;
+    const annotated = venues
+      .map((v) => ({ ...v, distanceKm: distanceKm(position, v) }))
+      .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+    if (radiusKm === null) return annotated;
+    return annotated.filter((v) => (v.distanceKm ?? 0) <= radiusKm);
+  }, [venues, position, radiusKm]);
+
+  const listNode = renderList ? renderList(displayVenues) : list;
 
   return (
-    <MapSyncProvider>
+    <div>
+      {/* Geo controls */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <NearMeButton />
+        <RadiusFilter value={radiusKm} onChange={setRadiusKm} />
+      </div>
+
       {/* Mobile toggle — only visible below lg */}
       <div className="mb-3 flex lg:hidden">
         <div className="inline-flex rounded-full border border-border bg-surface p-0.5">
@@ -71,14 +131,11 @@ export function VenuesView({
         </div>
       </div>
 
-      {/* Layout */}
       <div className="lg:grid lg:grid-cols-[1.4fr_1fr] lg:gap-6">
-        {/* List — hidden on mobile when map is active */}
         <div className={mobileView === "map" ? "hidden lg:block" : ""}>
-          {list}
+          {listNode}
         </div>
 
-        {/* Map — desktop sticky, mobile fixed below toggle */}
         <div
           className={[
             mobileView === "list" ? "hidden lg:block" : "block",
@@ -87,37 +144,49 @@ export function VenuesView({
           ].join(" ")}
         >
           <VenueMap
-            venues={venues}
+            venues={displayVenues}
             initialCenter={initialCenter}
             initialZoom={initialZoom}
           />
         </div>
       </div>
-    </MapSyncProvider>
+    </div>
   );
 }
 
 /**
- * Wrapper for a venue card that broadcasts hover state to the map.
- * Used inside the list passed to <VenuesView />.
+ * Wraps a venue card to broadcast hover into the shared sync context and to
+ * render a distance badge if the parent passed one.
  */
 export function VenueCardSync({
   venueId,
+  distanceKm: distance,
   children,
 }: {
   venueId: string;
+  distanceKm?: number;
   children: React.ReactNode;
 }) {
+  const locale = useLocale();
+  const t = useTranslations("geo");
   const { activeId, setActiveId } = useMapSync();
   return (
     <div
       onMouseEnter={() => setActiveId(venueId)}
       onMouseLeave={() => setActiveId(null)}
       className={[
-        "transition-shadow",
+        "relative transition-shadow",
         activeId === venueId ? "shadow-card-md" : "",
       ].join(" ")}
     >
+      {distance !== undefined && (
+        <span
+          className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-foreground/80 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm"
+          aria-label={t("distanceLabel")}
+        >
+          {formatDistance(distance, locale === "ka" ? "ka" : "en")}
+        </span>
+      )}
       {children}
     </div>
   );
