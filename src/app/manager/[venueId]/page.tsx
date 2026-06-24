@@ -25,6 +25,7 @@ import {
   AMENITIES,
   AMENITY_LABELS,
   WEEKDAY_LABELS,
+  SURFACE_CATEGORIES,
   type Amenity,
 } from "@/lib/enums";
 import { parseJSON, minutesToTime, formatGEL } from "@/lib/utils";
@@ -142,6 +143,22 @@ export default async function VenueManagePage({
                 <Input id="address" name="address" defaultValue={venue.address} required />
               </div>
               <div className="sm:col-span-2">
+                <Label htmlFor="district">{tRoot("filters.district")}</Label>
+                <Input
+                  id="district"
+                  name="district"
+                  defaultValue={venue.district ?? ""}
+                  placeholder={tRoot("filters.districtPlaceholder")}
+                  list="venue-districts"
+                />
+                <datalist id="venue-districts">
+                  {[
+                    "საბურთალო", "ვაკე", "დიდუბე", "მარჯანიშვილი", "გლდანი",
+                    "ნაძალადევი", "წყნეთი", "ისანი", "ვაზისუბანი",
+                  ].map((d) => <option key={d} value={d} />)}
+                </datalist>
+              </div>
+              <div className="sm:col-span-2">
                 <Label htmlFor="description">{t("description")}</Label>
                 <Textarea id="description" name="description" defaultValue={venue.description} />
               </div>
@@ -217,6 +234,15 @@ export default async function VenueManagePage({
                       <div>
                         <Label>{isDropIn ? tRoot("manager.dayPassPrice") : isClass ? tRoot("manager.defaultClassPrice") : t("pricePerHour")}</Label>
                         <Input name="pricePerHourGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
+                      </div>
+                      <div>
+                        <Label>{tRoot("filters.surface")}</Label>
+                        <Select name="surfaceCategory" defaultValue={facility.surfaceCategory ?? ""}>
+                          <option value="">{tRoot("filters.anySurface")}</option>
+                          {SURFACE_CATEGORIES.map((s) => (
+                            <option key={s} value={s}>{tRoot(`filters.surfaceOpts.${s}` as never)}</option>
+                          ))}
+                        </Select>
                       </div>
                       <div className="flex items-end gap-6">
                         <label className="flex items-center gap-2 text-sm">

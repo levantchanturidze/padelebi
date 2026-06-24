@@ -88,6 +88,24 @@
     "sport": "Sport",
     "allSports": "All sports"
   },
+  "filters": {
+    "district": "District",
+    "districtPlaceholder": "e.g. Saburtalo",
+    "surface": "Surface",
+    "anySurface": "Any surface",
+    "cover": "Cover",
+    "coverOpen": "Open",
+    "coverClosed": "Closed",
+    "surfaceOpts": {
+      "SYNTHETIC": "Synthetic",
+      "PARQUET": "Parquet",
+      "CLAY": "Clay",
+      "HARD": "Hard",
+      "GRASS": "Grass",
+      "CARPET": "Carpet",
+      "SAND": "Sand"
+    }
+  },
   "map": {
     "list": "List",
     "map": "Map",

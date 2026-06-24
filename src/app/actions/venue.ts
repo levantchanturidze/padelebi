@@ -6,7 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { getOwnedVenue, uniqueVenueSlug } from "@/lib/venue-access";
-import { AMENITIES } from "@/lib/enums";
+import { AMENITIES, SURFACE_CATEGORIES } from "@/lib/enums";
 import { timeToMinutes } from "@/lib/utils";
 import { getAdapter } from "@/lib/sports";
 
@@ -19,6 +19,11 @@ const venueSchema = z.object({
   description: z.string().max(2000).optional().or(z.literal("")),
   address: z.string().min(2),
   city: z.string().min(2).transform((c) => c.trim().replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())),
+  district: z
+    .string()
+    .max(80)
+    .optional()
+    .transform((d) => (d ? d.trim() : "") || null),
 });
 
 export async function createVenueAction(formData: FormData) {
@@ -28,6 +33,7 @@ export async function createVenueAction(formData: FormData) {
     description: formData.get("description") ?? "",
     address: formData.get("address"),
     city: formData.get("city"),
+    district: formData.get("district") ?? undefined,
   });
 
   const venue = await prisma.venue.create({
@@ -52,6 +58,7 @@ export async function updateVenueAction(formData: FormData) {
     description: formData.get("description") ?? "",
     address: formData.get("address"),
     city: formData.get("city"),
+    district: formData.get("district") ?? undefined,
   });
   const amenities = AMENITIES.filter((a) => formData.get(`amenity_${a}`) === "on");
 
@@ -97,6 +104,10 @@ const baseFacilitySchema = z.object({
   capacity: z.number().int().min(1).max(10000),
   isIndoor: z.boolean(),
   pricePerHourGEL: z.number().int().min(0).max(100000),
+  surfaceCategory: z
+    .union([z.enum(SURFACE_CATEGORIES), z.literal("")])
+    .optional()
+    .transform((v) => (v && v.length ? v : null)),
 });
 
 /**
@@ -139,6 +150,7 @@ export async function createFacilityAction(formData: FormData) {
     capacity: Number(formData.get("capacity") ?? adapter.defaults.capacity),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
+    surfaceCategory: String(formData.get("surfaceCategory") ?? ""),
   });
   const attributes = await parseAttributesFromForm(formData, base.sportId);
 
@@ -151,6 +163,7 @@ export async function createFacilityAction(formData: FormData) {
       capacity: base.capacity,
       isIndoor: base.isIndoor,
       pricePerHourGEL: base.pricePerHourGEL,
+      surfaceCategory: base.surfaceCategory,
       attributes: JSON.stringify(attributes),
       // TIME_SLOT facilities get a default open-every-day schedule; CLASS/DROP_IN don't need slot grids.
       ...(base.bookingModel === "TIME_SLOT"
@@ -186,6 +199,7 @@ export async function updateFacilityAction(formData: FormData) {
     capacity: Number(formData.get("capacity") ?? facility.capacity),
     isIndoor: formData.get("isIndoor") === "on",
     pricePerHourGEL: Number(formData.get("pricePerHourGEL")),
+    surfaceCategory: String(formData.get("surfaceCategory") ?? ""),
   });
   const attributes = await parseAttributesFromForm(formData, base.sportId);
 

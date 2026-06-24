@@ -88,6 +88,24 @@
     "sport": "სპორტი",
     "allSports": "ყველა სპორტი"
   },
+  "filters": {
+    "district": "უბანი",
+    "districtPlaceholder": "მაგ. საბურთალო",
+    "surface": "საფარი",
+    "anySurface": "ნებისმიერი საფარი",
+    "cover": "გადახურვა",
+    "coverOpen": "ღია",
+    "coverClosed": "დახურული",
+    "surfaceOpts": {
+      "SYNTHETIC": "ხელოვნური",
+      "PARQUET": "პარკეტი",
+      "CLAY": "თიხა",
+      "HARD": "მყარი",
+      "GRASS": "ბალახი",
+      "CARPET": "ხალიჩა",
+      "SAND": "ქვიშა"
+    }
+  },
   "map": {
     "list": "სია",
     "map": "რუკა",

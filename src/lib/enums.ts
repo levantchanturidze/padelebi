@@ -10,6 +10,22 @@ export type SkillLevel = (typeof SKILL_LEVELS)[number];
 export const VENUE_STATUSES = ["PENDING", "APPROVED", "SUSPENDED"] as const;
 export type VenueStatus = (typeof VENUE_STATUSES)[number];
 
+/**
+ * Cross-sport surface taxonomy used by the /venues filter. Sport adapters
+ * still own their granular per-sport surface variants in `attributes`; this
+ * is the unified set a consumer can filter by.
+ */
+export const SURFACE_CATEGORIES = [
+  "SYNTHETIC",
+  "PARQUET",
+  "CLAY",
+  "HARD",
+  "GRASS",
+  "CARPET",
+  "SAND",
+] as const;
+export type SurfaceCategory = (typeof SURFACE_CATEGORIES)[number];
+
 export const SURFACES = ["ARTIFICIAL_GRASS", "CONCRETE", "PANORAMIC"] as const;
 export type Surface = (typeof SURFACES)[number];
 

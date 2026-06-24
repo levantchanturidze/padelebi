@@ -11,7 +11,7 @@ import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity, cityCentroid } from "@/lib/city-map";
-import { AMENITIES } from "@/lib/enums";
+import { AMENITIES, SURFACE_CATEGORIES } from "@/lib/enums";
 import { tSportName } from "@/lib/sports";
 import { canonical, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -49,7 +49,9 @@ export default async function VenuesPage({
 }: {
   searchParams: Promise<{
     city?: string;
+    district?: string;
     sport?: string;
+    surface?: string;
     indoor?: string;
     maxPrice?: string;
     amenities?: string | string[];
@@ -57,7 +59,7 @@ export default async function VenuesPage({
     time?: string;
   }>;
 }) {
-  const { city, sport, indoor, maxPrice, amenities, date, time } = await searchParams;
+  const { city, district, sport, surface, indoor, maxPrice, amenities, date, time } = await searchParams;
   const t = await getTranslations("clubs");
   const tRoot = await getTranslations();
 
@@ -95,16 +97,25 @@ export default async function VenuesPage({
     ? await prisma.sport.findUnique({ where: { slug: sportFilter } })
     : null;
 
-  const [venues, sports] = await Promise.all([
+  const districtQuery = district?.trim() || undefined;
+  const surfaceQuery =
+    surface && (SURFACE_CATEGORIES as readonly string[]).includes(surface) ? surface : undefined;
+
+  const [venues, sports, knownDistricts] = await Promise.all([
     prisma.venue.findMany({
       where: {
         status: "APPROVED",
         ...(cityQuery ? { city: { contains: cityQuery, mode: "insensitive" } } : {}),
+        ...(districtQuery ? { district: { equals: districtQuery, mode: "insensitive" } } : {}),
         ...(sportRow ? { facilities: { some: { sportId: sportRow.id, isActive: true } } } : {}),
       },
       include: {
         facilities: {
-          where: { isActive: true, ...(sportRow ? { sportId: sportRow.id } : {}) },
+          where: {
+            isActive: true,
+            ...(sportRow ? { sportId: sportRow.id } : {}),
+            ...(surfaceQuery ? { surfaceCategory: surfaceQuery } : {}),
+          },
           include: {
             sport: true,
             schedules: true,
@@ -120,6 +131,16 @@ export default async function VenuesPage({
       orderBy: { name: "asc" },
     }),
     prisma.sport.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    // Distinct district list — powers the autocomplete datalist.
+    prisma.venue
+      .findMany({
+        where: { status: "APPROVED", NOT: { district: null } },
+        select: { district: true },
+        distinct: ["district"],
+        orderBy: { district: "asc" },
+        take: 100,
+      })
+      .then((rows) => rows.map((r) => r.district).filter((d): d is string => !!d)),
   ]);
 
   const filtered = venues.filter((venue) => {
@@ -167,7 +188,8 @@ export default async function VenuesPage({
     String(today.getDate()).padStart(2, "0"),
   ].join("-");
 
-  const hasFilters = city || sport || indoor || maxPrice || amenities || date || time;
+  const hasFilters =
+    city || district || sport || surface || indoor || maxPrice || amenities || date || time;
 
   return (
     <Container className="py-6 sm:py-10">
@@ -182,6 +204,18 @@ export default async function VenuesPage({
             <Input name="city" placeholder={t("cityPlaceholder")} defaultValue={city ?? ""} />
           </div>
           <div className="sm:w-44">
+            <label className="mb-1.5 block text-sm font-medium">{tRoot("filters.district")}</label>
+            <Input
+              name="district"
+              placeholder={tRoot("filters.districtPlaceholder")}
+              defaultValue={district ?? ""}
+              list="venues-filter-districts"
+            />
+            <datalist id="venues-filter-districts">
+              {knownDistricts.map((d) => <option key={d} value={d} />)}
+            </datalist>
+          </div>
+          <div className="sm:w-44">
             <label className="mb-1.5 block text-sm font-medium">{tRoot("venuesFilter.sport")}</label>
             <Select name="sport" defaultValue={sport ?? "all"}>
               <option value="all">{tRoot("venuesFilter.allSports")}</option>
@@ -191,11 +225,20 @@ export default async function VenuesPage({
             </Select>
           </div>
           <div className="sm:w-44">
-            <label className="mb-1.5 block text-sm font-medium">{t("courtType")}</label>
+            <label className="mb-1.5 block text-sm font-medium">{tRoot("filters.surface")}</label>
+            <Select name="surface" defaultValue={surface ?? ""}>
+              <option value="">{tRoot("filters.anySurface")}</option>
+              {SURFACE_CATEGORIES.map((s) => (
+                <option key={s} value={s}>{tRoot(`filters.surfaceOpts.${s}` as never)}</option>
+              ))}
+            </Select>
+          </div>
+          <div className="sm:w-44">
+            <label className="mb-1.5 block text-sm font-medium">{tRoot("filters.cover")}</label>
             <Select name="indoor" defaultValue={indoor ?? ""}>
               <option value="">{t("any")}</option>
-              <option value="indoor">{t("indoor")}</option>
-              <option value="outdoor">{t("outdoor")}</option>
+              <option value="indoor">{tRoot("filters.coverClosed")}</option>
+              <option value="outdoor">{tRoot("filters.coverOpen")}</option>
             </Select>
           </div>
           <div className="sm:w-36">
