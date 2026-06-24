@@ -1,8 +1,9 @@
 {
   "crons": [
     {
+      "// schedule": "Daily at 06:00 UTC = 10:00 Tbilisi (Vercel Hobby plan permits daily only)",
       "path": "/api/cron/booking-reminders",
-      "schedule": "0 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }

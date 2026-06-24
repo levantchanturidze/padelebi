@@ -28,9 +28,12 @@ export async function GET(request: Request) {
     }
   }
 
+  // Cron runs once a day. Send reminders for everything in the next 12–36h
+  // that hasn't been reminded yet — so every booking gets at least one
+  // reminder ~12–36 hours before kickoff regardless of when it was made.
   const now = new Date();
-  const windowStart = new Date(now.getTime() + 23 * 3_600_000);
-  const windowEnd = new Date(now.getTime() + 25 * 3_600_000);
+  const windowStart = new Date(now.getTime() + 12 * 3_600_000);
+  const windowEnd = new Date(now.getTime() + 36 * 3_600_000);
 
   const due = await prisma.booking.findMany({
     where: {
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
       startTime: { gte: windowStart, lt: windowEnd },
     },
     select: { id: true },
-    take: 200, // hard cap per run; cron is hourly so the window is small
+    take: 500,
   });
 
   let sent = 0;
