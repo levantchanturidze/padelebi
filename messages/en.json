@@ -88,6 +88,12 @@
     "sport": "Sport",
     "allSports": "All sports"
   },
+  "map": {
+    "list": "List",
+    "map": "Map",
+    "noVenuesWithCoords": "These venues don't have coordinates yet.",
+    "viewVenue": "View venue"
+  },
   "clubDetail": {
     "amenities": "Amenities",
     "courts": "Facilities",

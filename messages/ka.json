@@ -88,6 +88,12 @@
     "sport": "სპორტი",
     "allSports": "ყველა სპორტი"
   },
+  "map": {
+    "list": "სია",
+    "map": "რუკა",
+    "noVenuesWithCoords": "ამ ობიექტებს ჯერ კოორდინატები არ აქვს.",
+    "viewVenue": "ნახე ობიექტი"
+  },
   "clubDetail": {
     "amenities": "სერვისები",
     "courts": "ობიექტები",

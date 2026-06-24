@@ -166,6 +166,75 @@ body {
   display: none;
 }
 
+/* ── MapLibre pin + popup theming ──────────────────────────────────────── */
+.playtora-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-foreground);
+  border: 2px solid var(--color-brand-500);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow: 0 2px 6px rgba(11, 14, 20, 0.35);
+  padding: 0;
+}
+.playtora-pin:hover,
+.playtora-pin--active {
+  transform: scale(1.18);
+  background: var(--color-brand-500);
+  box-shadow: 0 4px 14px rgba(196, 255, 61, 0.55), 0 0 0 4px rgba(196, 255, 61, 0.18);
+}
+.playtora-pin__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-brand-500);
+}
+.playtora-pin--active .playtora-pin__dot,
+.playtora-pin:hover .playtora-pin__dot {
+  background: var(--color-foreground);
+}
+
+.maplibregl-popup-content {
+  border-radius: var(--radius-md) !important;
+  padding: 0.75rem 0.875rem !important;
+  box-shadow: 0 8px 28px rgba(11, 14, 20, 0.14), 0 2px 6px rgba(11, 14, 20, 0.08) !important;
+  border: 1px solid var(--color-border);
+}
+.maplibregl-popup-tip {
+  border-top-color: var(--color-surface) !important;
+}
+.playtora-popup__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-foreground);
+}
+.playtora-popup__city {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+.playtora-popup__price {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+.playtora-popup__price strong {
+  color: var(--color-foreground);
+}
+.playtora-popup__link {
+  margin-top: 8px;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-cobalt-600);
+}
+.playtora-popup__link:hover {
+  color: var(--color-cobalt-700);
+}
+
 /* ── Gradient text ─────────────────────────────────────────────────────── */
 .text-gradient {
   background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.75) 100%);
