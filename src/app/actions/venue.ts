@@ -35,10 +35,12 @@ export async function createVenueAction(formData: FormData) {
     city: formData.get("city"),
     district: formData.get("district") ?? undefined,
   });
+  const amenities = AMENITIES.filter((a) => formData.get(`amenity_${a}`) === "on");
 
   const venue = await prisma.venue.create({
     data: {
       ...parsed,
+      amenities: JSON.stringify(amenities),
       slug: await uniqueVenueSlug(parsed.name),
       status: "PENDING", // platform admin must approve
       ownerId: user.id,

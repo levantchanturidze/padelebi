@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { createVenueAction } from "@/app/actions/venue";
 import { formatGEL } from "@/lib/utils";
+import { AMENITIES, AMENITY_LABELS } from "@/lib/enums";
 
 const statusTone = { APPROVED: "success", PENDING: "warning", SUSPENDED: "danger" } as const;
 
@@ -48,6 +49,7 @@ function StatCard({
 export default async function ManagerOverviewPage() {
   const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/manager");
   const t = await getTranslations("club");
+  const tRoot = await getTranslations();
 
   const MANAGER_NAV = [
     { href: "/manager", label: t("overview") },
@@ -264,12 +266,42 @@ export default async function ManagerOverviewPage() {
               <Input id="city" name="city" required />
             </div>
             <div>
+              <Label htmlFor="district">{tRoot("filters.district")}</Label>
+              <Input
+                id="district"
+                name="district"
+                placeholder={tRoot("filters.districtPlaceholder")}
+                list="venue-create-districts"
+              />
+              <datalist id="venue-create-districts">
+                {[
+                  "საბურთალო", "ვაკე", "დიდუბე", "მარჯანიშვილი", "გლდანი",
+                  "ნაძალადევი", "წყნეთი", "ისანი", "ვაზისუბანი",
+                ].map((d) => <option key={d} value={d} />)}
+              </datalist>
+            </div>
+            <div className="sm:col-span-2">
               <Label htmlFor="address">{t("address")}</Label>
               <Input id="address" name="address" required />
             </div>
             <div className="sm:col-span-2">
               <Label htmlFor="description">{t("description")}</Label>
               <Textarea id="description" name="description" />
+            </div>
+            <div className="sm:col-span-2">
+              <Label>{t("amenitiesLabel")}</Label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {AMENITIES.map((a) => (
+                  <label key={a} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name={`amenity_${a}`}
+                      className="h-4 w-4 accent-[var(--color-brand-500)]"
+                    />
+                    {tRoot(`clubs.amenityLabels.${a}` as never) ?? AMENITY_LABELS[a]}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="sm:col-span-2">
               <Button type="submit">{t("createClub")}</Button>

@@ -463,6 +463,15 @@ export default async function VenueManagePage({
                   <Label>{t("pricePerHour")}</Label>
                   <Input name="pricePerHourGEL" type="number" min={0} defaultValue={defaultAdapter.defaults.pricePerHourGEL} required />
                 </div>
+                <div>
+                  <Label>{tRoot("filters.surface")}</Label>
+                  <Select name="surfaceCategory" defaultValue="">
+                    <option value="">{tRoot("filters.anySurface")}</option>
+                    {SURFACE_CATEGORIES.map((s) => (
+                      <option key={s} value={s}>{tRoot(`filters.surfaceOpts.${s}` as never)}</option>
+                    ))}
+                  </Select>
+                </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" name="isIndoor" className="h-4 w-4 accent-[var(--color-brand-500)]" />
