@@ -19,13 +19,13 @@ import { getFacilityAvailability } from "@/lib/availability";
 import { getCurrentUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { AMENITY_LABELS, type Amenity } from "@/lib/enums";
-import { getAdapter, parseAttributes } from "@/lib/sports";
+import { getAdapter, parseAttributes, tSportName, tSummaryValue } from "@/lib/sports";
 
-const BOOKING_MODEL_NOUN: Record<string, string> = {
-  TIME_SLOT: "Book",
-  CLASS: "Join a class",
-  DROP_IN: "Day pass",
-};
+function bookingModelHeader(model: string, t: (k: string) => string): string {
+  if (model === "CLASS") return t("venueDetail.joinClass");
+  if (model === "DROP_IN") return t("venueDetail.dayPass");
+  return t("venueDetail.book");
+}
 
 function parseDateParam(date?: string): Date {
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -48,6 +48,7 @@ export default async function VenueDetailPage({
   const facilityId = sp.facilityId ?? sp.courtId;
   const date = sp.date;
   const t = await getTranslations("clubDetail");
+  const tRoot = await getTranslations();
 
   const venue = await prisma.venue.findFirst({
     where: { slug, status: "APPROVED" },
@@ -145,7 +146,9 @@ export default async function VenueDetailPage({
           <Card className="h-fit lg:order-2 lg:sticky lg:top-20">
             <CardContent>
               <h2 className="text-lg font-semibold">
-                {selectedFacility ? BOOKING_MODEL_NOUN[selectedFacility.bookingModel] ?? t("bookACourt") : t("bookACourt")}
+                {selectedFacility
+                  ? bookingModelHeader(selectedFacility.bookingModel, (k) => tRoot(k as never))
+                  : t("bookACourt")}
               </h2>
 
               {selectedFacility ? (
@@ -256,7 +259,7 @@ export default async function VenueDetailPage({
             {sportTags.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {sportTags.map((s) => (
-                  <SportBadge key={s.id} name={s.name} />
+                  <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} />
                 ))}
                 {reviewCount > 0 && (
                   <Rating value={avgRating} count={reviewCount} />
@@ -289,7 +292,8 @@ export default async function VenueDetailPage({
             {/* Reviews */}
             <div className="mt-6">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Reviews {reviewCount > 0 && <span className="text-foreground">· {reviewCount}</span>}
+                {tRoot("venueDetail.reviews")}
+                {reviewCount > 0 && <span className="text-foreground"> · {reviewCount}</span>}
               </h2>
 
               {user && (
@@ -306,7 +310,7 @@ export default async function VenueDetailPage({
               )}
 
               {reviews.length === 0 ? (
-                <p className="mt-3 text-sm text-muted">No reviews yet.</p>
+                <p className="mt-3 text-sm text-muted">{tRoot("venueDetail.noReviews")}</p>
               ) : (
                 <ul className="mt-3 space-y-3">
                   {reviews.map((r) => (
@@ -326,13 +330,19 @@ export default async function VenueDetailPage({
 
             <div className="mt-6">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
-                Facilities
+                {tRoot("venueDetail.facilities")}
               </h2>
               <div className="mt-3 space-y-2">
                 {venue.facilities.map((c) => {
                   const adapter = getAdapter(c.sport.slug);
                   const attrs = parseAttributes(c.sport.slug, c.attributes);
                   const summary = adapter.summary(attrs);
+                  const priceLabel =
+                    c.bookingModel === "DROP_IN"
+                      ? `${formatGEL(c.pricePerHourGEL)}${tRoot("venueDetail.perDay")}`
+                      : c.bookingModel === "CLASS"
+                        ? tRoot("venueDetail.fromPrice", { price: formatGEL(c.pricePerHourGEL) })
+                        : `${formatGEL(c.pricePerHourGEL)}${tRoot("venueDetail.perHour")}`;
                   return (
                     <div
                       key={c.id}
@@ -341,19 +351,15 @@ export default async function VenueDetailPage({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{c.name}</span>
-                          <SportBadge name={c.sport.name} />
+                          <SportBadge name={tSportName(tRoot, c.sport.slug)} />
                         </div>
-                        <span className="font-medium text-brand-600">
-                          {c.bookingModel === "DROP_IN"
-                            ? `${formatGEL(c.pricePerHourGEL)}/day`
-                            : c.bookingModel === "CLASS"
-                              ? `from ${formatGEL(c.pricePerHourGEL)}`
-                              : `${formatGEL(c.pricePerHourGEL)}/hr`}
-                        </span>
+                        <span className="font-medium text-brand-600">{priceLabel}</span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {summary.map((row) => (
-                          <Badge key={row.label} tone="muted">{row.value}</Badge>
+                          <Badge key={row.labelKey + row.valueKey} tone="muted">
+                            {tSummaryValue((k) => tRoot(k as never), row.valueKey)}
+                          </Badge>
                         ))}
                         <Badge tone={c.isIndoor ? "brand" : "neutral"}>
                           {c.isIndoor ? t("indoor") : t("outdoor")}

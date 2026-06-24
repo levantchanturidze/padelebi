@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createDropInAction, type BookingActionState } from "@/app/actions/booking";
 import { Button } from "@/components/ui/button";
 import { formatGEL } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function DropInCta({
   slug: string;
   isAuthenticated: boolean;
 }) {
+  const t = useTranslations("dropIn");
   const [state, action, pending] = useActionState<BookingActionState, FormData>(
     createDropInAction,
     undefined,
@@ -53,10 +55,10 @@ export function DropInCta({
 
         <div className="px-4 pt-4">
           <p className="text-base font-semibold text-foreground">{facilityName}</p>
-          <p className="mt-0.5 text-xs text-muted">Day pass · valid for the full day</p>
+          <p className="mt-0.5 text-xs text-muted">{t("validForDay")}</p>
 
           <label className="mt-3 block">
-            <span className="text-xs font-medium text-muted">Date</span>
+            <span className="text-xs font-medium text-muted">{t("date")}</span>
             <input
               type="date"
               value={date}
@@ -67,14 +69,14 @@ export function DropInCta({
           </label>
 
           <p className="mt-3 flex items-end justify-between">
-            <span className="text-sm text-muted">Total</span>
+            <span className="text-sm text-muted">{t("total")}</span>
             <span className="text-2xl font-bold text-brand-600">{formatGEL(priceGEL)}</span>
           </p>
         </div>
 
         <div className="px-4 pb-4 pt-3">
           <Button type="submit" disabled={pending} size="lg" className="w-full">
-            {pending ? "Confirming…" : isAuthenticated ? "Buy day pass" : "Sign in to buy"}
+            {pending ? t("confirming") : isAuthenticated ? t("buyDayPass") : t("signInToBuy")}
           </Button>
         </div>
       </form>

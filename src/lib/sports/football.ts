@@ -12,21 +12,9 @@ const attributesSchema = z.object({
 
 type FootballAttributes = z.infer<typeof attributesSchema>;
 
-const PITCH_LABELS: Record<(typeof PITCH_SIZES)[number], string> = {
-  FIVE: "5-a-side",
-  SEVEN: "7-a-side",
-  ELEVEN: "11-a-side",
-};
-
-const GRASS_LABELS: Record<(typeof GRASS_TYPES)[number], string> = {
-  NATURAL: "Natural grass",
-  ARTIFICIAL: "Artificial turf",
-  HYBRID: "Hybrid",
-};
-
 export const footballAdapter: SportAdapter<FootballAttributes> = {
   slug: "football",
-  facilityNoun: { singular: "pitch", plural: "pitches" },
+  facilityNounKey: { singular: "facilityNoun.pitch", plural: "facilityNoun.pitches" },
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 80,
@@ -35,37 +23,30 @@ export const footballAdapter: SportAdapter<FootballAttributes> = {
     attributes: { pitchSize: "FIVE", grassType: "ARTIFICIAL", lighting: false },
   },
   allowedAmenities: [
-    "PARKING",
-    "SHOWERS",
-    "LOCKER_ROOM",
-    "CAFE",
-    "EQUIPMENT_RENTAL",
-    "LIGHTING",
-    "WHEELCHAIR_ACCESS",
-    "WIFI",
-    "WATER_FOUNTAIN",
+    "PARKING", "SHOWERS", "LOCKER_ROOM", "CAFE",
+    "EQUIPMENT_RENTAL", "LIGHTING", "WHEELCHAIR_ACCESS", "WIFI", "WATER_FOUNTAIN",
   ],
   attributesSchema,
   summary(a) {
     return [
-      { label: "Format", value: PITCH_LABELS[a.pitchSize] },
-      { label: "Surface", value: GRASS_LABELS[a.grassType] },
-      ...(a.lighting ? [{ label: "Floodlit", value: "Yes" }] : []),
+      { labelKey: "sportAttrs.football.format", valueKey: `sportAttrs.football.pitchSizeOpts.${a.pitchSize}` },
+      { labelKey: "sportAttrs.football.grassType", valueKey: `sportAttrs.football.grassTypeOpts.${a.grassType}` },
+      ...(a.lighting ? [{ labelKey: "sportAttrs.football.floodlit", valueKey: "sportAttrs.yes" }] : []),
     ];
   },
   formFields: [
     {
       kind: "select",
       name: "pitchSize",
-      label: "Pitch format",
-      options: PITCH_SIZES.map((s) => ({ value: s, label: PITCH_LABELS[s] })),
+      labelKey: "sportAttrs.football.pitchSize",
+      options: PITCH_SIZES.map((s) => ({ value: s, labelKey: `sportAttrs.football.pitchSizeOpts.${s}` })),
     },
     {
       kind: "select",
       name: "grassType",
-      label: "Grass type",
-      options: GRASS_TYPES.map((s) => ({ value: s, label: GRASS_LABELS[s] })),
+      labelKey: "sportAttrs.football.grassType",
+      options: GRASS_TYPES.map((s) => ({ value: s, labelKey: `sportAttrs.football.grassTypeOpts.${s}` })),
     },
-    { kind: "boolean", name: "lighting", label: "Has floodlights" },
+    { kind: "boolean", name: "lighting", labelKey: "sportAttrs.football.lighting" },
   ],
 };

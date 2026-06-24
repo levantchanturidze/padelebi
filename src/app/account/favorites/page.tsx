@@ -9,15 +9,19 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
+import { tSportName } from "@/lib/sports";
 
 export default async function FavoritesPage() {
   const user = await requireUser("/account/favorites");
-  const t = await getTranslations("accountBookings");
+  const [t, tBookings] = await Promise.all([
+    getTranslations(),
+    getTranslations("accountBookings"),
+  ]);
 
   const ACCOUNT_NAV = [
-    { href: "/account/bookings", label: t("title") },
-    { href: "/account/favorites", label: "Favorites" },
-    { href: "/account/profile", label: t("profile") },
+    { href: "/account/bookings", label: tBookings("title") },
+    { href: "/account/favorites", label: t("favorites.title") },
+    { href: "/account/profile", label: tBookings("profile") },
   ];
 
   const favorites = await prisma.favorite.findMany({
@@ -36,14 +40,14 @@ export default async function FavoritesPage() {
   });
 
   return (
-    <DashboardShell title="Favorites" nav={ACCOUNT_NAV} current="/account/favorites">
+    <DashboardShell title={t("favorites.title")} nav={ACCOUNT_NAV} current="/account/favorites">
       {favorites.length === 0 ? (
         <Card>
           <CardContent className="text-center text-sm text-muted">
-            No favorites yet. Tap the heart on any venue to save it here.
+            {t("favorites.empty")}
             <div className="mt-3">
               <Link href="/venues" className="text-brand-600 hover:underline">
-                Browse venues →
+                {t("favorites.browseVenues")} →
               </Link>
             </div>
           </CardContent>
@@ -59,6 +63,11 @@ export default async function FavoritesPage() {
             const sportTags = Array.from(
               new Map(venue.facilities.map((f) => [f.sport.id, f.sport])).values(),
             );
+            const facilityCount = venue.facilities.length;
+            const facilityCountLabel =
+              facilityCount === 1
+                ? t("favorites.facilitiesOne")
+                : t("favorites.facilitiesMany", { count: facilityCount });
             return (
               <div key={fav.id} className="relative">
                 <Link href={`/venues/${venue.slug}`}>
@@ -75,16 +84,16 @@ export default async function FavoritesPage() {
                       {sportTags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {sportTags.slice(0, 3).map((s) => (
-                            <SportBadge key={s.id} name={s.name} />
+                            <SportBadge key={s.id} name={tSportName(t, s.slug)} />
                           ))}
                         </div>
                       )}
                       <div className="mt-3 flex items-center justify-between">
-                        <Badge tone="brand">
-                          {venue.facilities.length} {venue.facilities.length === 1 ? "facility" : "facilities"}
-                        </Badge>
+                        <Badge tone="brand">{facilityCountLabel}</Badge>
                         {minPrice !== null && (
-                          <span className="text-sm font-medium">from {formatGEL(minPrice)}/hr</span>
+                          <span className="text-sm font-medium">
+                            {t("favorites.fromPrice", { price: formatGEL(minPrice) })}
+                          </span>
                         )}
                       </div>
                     </CardContent>

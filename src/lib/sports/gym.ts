@@ -13,7 +13,7 @@ type GymAttributes = z.infer<typeof attributesSchema>;
 
 export const gymAdapter: SportAdapter<GymAttributes> = {
   slug: "gym",
-  facilityNoun: { singular: "studio", plural: "studios" },
+  facilityNounKey: { singular: "facilityNoun.studio", plural: "facilityNoun.studios" },
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 20,
@@ -28,34 +28,33 @@ export const gymAdapter: SportAdapter<GymAttributes> = {
     },
   },
   allowedAmenities: [
-    "PARKING",
-    "SHOWERS",
-    "LOCKER_ROOM",
-    "CAFE",
-    "EQUIPMENT_RENTAL",
-    "WHEELCHAIR_ACCESS",
-    "WIFI",
-    "SAUNA",
-    "WATER_FOUNTAIN",
+    "PARKING", "SHOWERS", "LOCKER_ROOM", "CAFE",
+    "EQUIPMENT_RENTAL", "WHEELCHAIR_ACCESS", "WIFI", "SAUNA", "WATER_FOUNTAIN",
   ],
   attributesSchema,
   summary(a) {
-    const equipment = [
-      a.hasFreeWeights ? "Free weights" : null,
-      a.hasMachines ? "Machines" : null,
-      a.hasCardio ? "Cardio" : null,
-      a.hasPersonalTrainer ? "Personal trainer" : null,
-    ].filter(Boolean) as string[];
-    return [
-      ...(a.areaSqm > 0 ? [{ label: "Area", value: `${a.areaSqm} m²` }] : []),
-      ...(equipment.length ? [{ label: "Equipment", value: equipment.join(" · ") }] : []),
-    ];
+    const equipment: string[] = [];
+    if (a.hasFreeWeights) equipment.push("sportAttrs.gym.freeWeightsShort");
+    if (a.hasMachines) equipment.push("sportAttrs.gym.machinesShort");
+    if (a.hasCardio) equipment.push("sportAttrs.gym.cardioShort");
+    if (a.hasPersonalTrainer) equipment.push("sportAttrs.gym.personalTrainerShort");
+    // For equipment we render translated values joined with · in the consumer.
+    // We encode the joined-keys path as a comma-separated list of keys for the renderer.
+    const out: { labelKey: string; valueKey: string }[] = [];
+    if (a.areaSqm > 0) {
+      // valueKey here is a literal number string; renderer treats keys with leading "@" as literals.
+      out.push({ labelKey: "sportAttrs.gym.area", valueKey: `@${a.areaSqm} m²` });
+    }
+    if (equipment.length) {
+      out.push({ labelKey: "sportAttrs.gym.equipment", valueKey: `#${equipment.join(",")}` });
+    }
+    return out;
   },
   formFields: [
-    { kind: "number", name: "areaSqm", label: "Floor area", min: 0, max: 100000, suffix: "m²" },
-    { kind: "boolean", name: "hasFreeWeights", label: "Free weights" },
-    { kind: "boolean", name: "hasMachines", label: "Resistance machines" },
-    { kind: "boolean", name: "hasCardio", label: "Cardio equipment" },
-    { kind: "boolean", name: "hasPersonalTrainer", label: "Personal trainer available" },
+    { kind: "number", name: "areaSqm", labelKey: "sportAttrs.gym.areaSqm", min: 0, max: 100000, suffix: "m²" },
+    { kind: "boolean", name: "hasFreeWeights", labelKey: "sportAttrs.gym.hasFreeWeights" },
+    { kind: "boolean", name: "hasMachines", labelKey: "sportAttrs.gym.hasMachines" },
+    { kind: "boolean", name: "hasCardio", labelKey: "sportAttrs.gym.hasCardio" },
+    { kind: "boolean", name: "hasPersonalTrainer", labelKey: "sportAttrs.gym.hasPersonalTrainer" },
   ],
 };

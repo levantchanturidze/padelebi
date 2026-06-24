@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createClassBookingAction, type BookingActionState } from "@/app/actions/booking";
 import { Button } from "@/components/ui/button";
 import { formatGEL } from "@/lib/utils";
@@ -39,6 +40,7 @@ export function ClassRoster({
   slug: string;
   isAuthenticated: boolean;
 }) {
+  const t = useTranslations("classRoster");
   const [state, action, pending] = useActionState<BookingActionState, FormData>(
     createClassBookingAction,
     undefined,
@@ -49,7 +51,7 @@ export function ClassRoster({
   if (sessions.length === 0) {
     return (
       <p className="rounded-[var(--radius-md)] bg-background p-4 text-sm text-muted">
-        No upcoming classes. Check back soon.
+        {t("noClasses")}
       </p>
     );
   }
@@ -92,7 +94,11 @@ export function ClassRoster({
                 <div className="text-right">
                   <p className="text-sm font-bold text-brand-600">{formatGEL(s.priceGEL)}</p>
                   <p className={["mt-0.5 text-xs", full ? "text-danger" : "text-muted"].join(" ")}>
-                    {full ? "Full" : `${left} ${left === 1 ? "seat" : "seats"} left`}
+                    {full
+                      ? t("full")
+                      : left === 1
+                        ? t("seatsLeftOne")
+                        : t("seatsLeftMany", { count: left })}
                   </p>
                 </div>
               </button>
@@ -106,7 +112,7 @@ export function ClassRoster({
                   <input type="hidden" name="slug" value={slug} />
                   <div className="flex flex-wrap items-end gap-3">
                     <label className="flex flex-col text-xs font-medium text-muted">
-                      Seats
+                      {t("seats")}
                       <select
                         name="attendees"
                         value={attendees}
@@ -121,10 +127,10 @@ export function ClassRoster({
                       </select>
                     </label>
                     <p className="text-sm">
-                      Total <span className="font-bold text-brand-600">{formatGEL(s.priceGEL * attendees)}</span>
+                      {t("total")} <span className="font-bold text-brand-600">{formatGEL(s.priceGEL * attendees)}</span>
                     </p>
                     <Button type="submit" disabled={pending} size="sm" className="ml-auto">
-                      {pending ? "Joining…" : isAuthenticated ? "Join class" : "Sign in to join"}
+                      {pending ? t("joining") : isAuthenticated ? t("joinClass") : t("signInToJoin")}
                     </Button>
                   </div>
                 </form>

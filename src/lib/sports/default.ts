@@ -10,14 +10,9 @@ const attributesSchema = z
 
 type DefaultAttributes = z.infer<typeof attributesSchema>;
 
-/**
- * Used for any sport that doesn't have its own adapter yet. Keeps the platform
- * working end-to-end (add a new Sport row, get a working facility form) even
- * before we write a bespoke adapter for it.
- */
 export const defaultAdapter: SportAdapter<DefaultAttributes> = {
   slug: "default",
-  facilityNoun: { singular: "facility", plural: "facilities" },
+  facilityNounKey: { singular: "facilityNoun.facility", plural: "facilityNoun.facilities" },
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 30,
@@ -28,9 +23,14 @@ export const defaultAdapter: SportAdapter<DefaultAttributes> = {
   allowedAmenities: AMENITIES,
   attributesSchema,
   summary(a) {
-    return a.notes ? [{ label: "Notes", value: a.notes }] : [];
+    return a.notes ? [{ labelKey: "sportAttrs.default.notes", valueKey: `@${a.notes}` }] : [];
   },
   formFields: [
-    { kind: "text", name: "notes", label: "Notes", placeholder: "Anything players should know" },
+    {
+      kind: "text",
+      name: "notes",
+      labelKey: "sportAttrs.default.notes",
+      placeholderKey: "sportAttrs.default.notesPlaceholder",
+    },
   ],
 };

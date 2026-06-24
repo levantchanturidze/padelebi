@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity } from "@/lib/city-map";
 import { AMENITIES } from "@/lib/enums";
+import { tSportName } from "@/lib/sports";
 
 const TIME_OPTIONS = Array.from({ length: 18 }, (_, i) => {
   const h = i + 6;
@@ -42,6 +43,7 @@ export default async function VenuesPage({
 }) {
   const { city, sport, indoor, maxPrice, amenities, date, time } = await searchParams;
   const t = await getTranslations("clubs");
+  const tRoot = await getTranslations();
 
   const cityQuery = city ? normalizeCity(city) : undefined;
   const selectedAmenities = !amenities
@@ -164,11 +166,11 @@ export default async function VenuesPage({
             <Input name="city" placeholder={t("cityPlaceholder")} defaultValue={city ?? ""} />
           </div>
           <div className="sm:w-44">
-            <label className="mb-1.5 block text-sm font-medium">Sport</label>
+            <label className="mb-1.5 block text-sm font-medium">{tRoot("venuesFilter.sport")}</label>
             <Select name="sport" defaultValue={sport ?? "all"}>
-              <option value="all">All sports</option>
+              <option value="all">{tRoot("venuesFilter.allSports")}</option>
               {sports.map((s) => (
-                <option key={s.id} value={s.slug}>{s.name}</option>
+                <option key={s.id} value={s.slug}>{tSportName(tRoot, s.slug)}</option>
               ))}
             </Select>
           </div>
@@ -254,7 +256,7 @@ export default async function VenuesPage({
                   {sportTags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {sportTags.slice(0, 4).map((s) => (
-                        <SportBadge key={s.id} name={s.name} />
+                        <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} />
                       ))}
                       {sportTags.length > 4 && (
                         <span className="text-[11px] text-muted">+{sportTags.length - 4}</span>

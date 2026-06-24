@@ -28,13 +28,9 @@ import {
   type Amenity,
 } from "@/lib/enums";
 import { parseJSON, minutesToTime, formatGEL } from "@/lib/utils";
-import { getAdapter, parseAttributes } from "@/lib/sports";
+import { getAdapter, parseAttributes, tSportName } from "@/lib/sports";
 
-const BOOKING_MODEL_LABELS: Record<string, string> = {
-  TIME_SLOT: "Time slot (court / pitch)",
-  CLASS: "Class session (group)",
-  DROP_IN: "Day pass (drop-in)",
-};
+const BOOKING_MODEL_KEYS = ["TIME_SLOT", "CLASS", "DROP_IN"] as const;
 
 export default async function VenueManagePage({
   params,
@@ -48,7 +44,7 @@ export default async function VenueManagePage({
   const user = await requireRole(["CLUB_ADMIN", "PLATFORM_ADMIN"], "/manager");
   if (!(await getOwnedVenue(venueId, user))) redirect("/manager");
 
-  const [venue, sports, t] = await Promise.all([
+  const [venue, sports, t, tRoot] = await Promise.all([
     prisma.venue.findUnique({
       where: { id: venueId },
       include: {
@@ -69,6 +65,7 @@ export default async function VenueManagePage({
     }),
     prisma.sport.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     getTranslations("club"),
+    getTranslations(),
   ]);
   if (!venue) notFound();
 
@@ -149,12 +146,12 @@ export default async function VenueManagePage({
                 <Textarea id="description" name="description" defaultValue={venue.description} />
               </div>
               <div className="sm:col-span-2">
-                <Label>Amenities</Label>
+                <Label>{t("amenitiesLabel")}</Label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {AMENITIES.map((a) => (
                     <label key={a} className="flex items-center gap-2 text-sm">
                       <input type="checkbox" name={`amenity_${a}`} defaultChecked={amenities.includes(a)} className="h-4 w-4 accent-[var(--color-brand-500)]" />
-                      {AMENITY_LABELS[a]}
+                      {tRoot(`clubs.amenityLabels.${a}` as never) ?? AMENITY_LABELS[a]}
                     </label>
                   ))}
                 </div>
@@ -196,29 +193,29 @@ export default async function VenueManagePage({
                     <form action={updateFacilityAction} className="grid gap-3 sm:grid-cols-2">
                       <input type="hidden" name="facilityId" value={facility.id} />
                       <div>
-                        <Label>{adapter.facilityNoun.singular[0].toUpperCase() + adapter.facilityNoun.singular.slice(1)} name</Label>
+                        <Label>{t("courtName")}</Label>
                         <Input name="name" defaultValue={facility.name} required />
                       </div>
                       <div>
-                        <Label>Sport</Label>
+                        <Label>{tRoot("manager.sport")}</Label>
                         <Select name="sportId" defaultValue={facility.sportId}>
-                          {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          {sports.map((s) => <option key={s.id} value={s.id}>{tSportName(tRoot, s.slug)}</option>)}
                         </Select>
                       </div>
                       <div>
-                        <Label>Booking model</Label>
+                        <Label>{tRoot("manager.bookingModelLabel")}</Label>
                         <Select name="bookingModel" defaultValue={facility.bookingModel}>
-                          {Object.entries(BOOKING_MODEL_LABELS).map(([k, v]) => (
-                            <option key={k} value={k}>{v}</option>
+                          {BOOKING_MODEL_KEYS.map((k) => (
+                            <option key={k} value={k}>{tRoot(`bookingModels.${k}` as never)}</option>
                           ))}
                         </Select>
                       </div>
                       <div>
-                        <Label>Capacity</Label>
+                        <Label>{tRoot("manager.capacity")}</Label>
                         <Input name="capacity" type="number" min={1} max={10000} defaultValue={facility.capacity} required />
                       </div>
                       <div>
-                        <Label>{isDropIn ? "Day-pass price (GEL)" : isClass ? "Default class price (GEL)" : t("pricePerHour")}</Label>
+                        <Label>{isDropIn ? tRoot("manager.dayPassPrice") : isClass ? tRoot("manager.defaultClassPrice") : t("pricePerHour")}</Label>
                         <Input name="pricePerHourGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
                       </div>
                       <div className="flex items-end gap-6">
@@ -234,7 +231,7 @@ export default async function VenueManagePage({
 
                       <div className="sm:col-span-2">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                          {facility.sport.name} details
+                          {tRoot("manager.details", { sport: tSportName(tRoot, facility.sport.slug) })}
                         </p>
                         <AttributesForm fields={adapter.formFields} initial={attrs} />
                       </div>
@@ -284,9 +281,9 @@ export default async function VenueManagePage({
                     {/* Class sessions — only for CLASS */}
                     {isClass && (
                       <div className="rounded-[var(--radius-md)] border border-border bg-background p-4">
-                        <h3 className="text-sm font-semibold">Upcoming classes</h3>
+                        <h3 className="text-sm font-semibold">{tRoot("manager.upcomingClasses")}</h3>
                         {facility.classes.length === 0 ? (
-                          <p className="mt-2 text-sm text-muted">No upcoming sessions. Add one below.</p>
+                          <p className="mt-2 text-sm text-muted">{tRoot("manager.noUpcomingSessions")}</p>
                         ) : (
                           <ul className="mt-2 space-y-1.5 text-sm">
                             {facility.classes.map((cs) => (
@@ -295,12 +292,12 @@ export default async function VenueManagePage({
                                   <span className="font-medium">{cs.title}</span>{" "}
                                   · {format(cs.startTime, "EEE d MMM, HH:mm")}–{format(cs.endTime, "HH:mm")}
                                   {cs.instructor ? <> · {cs.instructor}</> : null}
-                                  {" "}· {cs._count.bookings}/{cs.capacity} booked
+                                  {" "}· {tRoot("manager.booked", { taken: cs._count.bookings, capacity: cs.capacity })}
                                   {" "}· {formatGEL(cs.priceGEL)}
                                 </span>
                                 <form action={cancelClassSessionAction}>
                                   <input type="hidden" name="sessionId" value={cs.id} />
-                                  <button className="text-danger hover:underline" type="submit">Cancel</button>
+                                  <button className="text-danger hover:underline" type="submit">{tRoot("manager.cancelSession")}</button>
                                 </form>
                               </li>
                             ))}
@@ -310,31 +307,31 @@ export default async function VenueManagePage({
                         <form action={createClassSessionAction} className="mt-4 grid gap-3 sm:grid-cols-2">
                           <input type="hidden" name="facilityId" value={facility.id} />
                           <div className="sm:col-span-2">
-                            <Label>Session title</Label>
-                            <Input name="title" placeholder="Morning HIIT" required />
+                            <Label>{tRoot("manager.sessionTitle")}</Label>
+                            <Input name="title" placeholder={tRoot("manager.sessionTitlePlaceholder")} required />
                           </div>
                           <div>
-                            <Label>Start</Label>
+                            <Label>{tRoot("manager.sessionStart")}</Label>
                             <Input name="startTime" type="datetime-local" defaultValue={nowLocal} required />
                           </div>
                           <div>
-                            <Label>End</Label>
+                            <Label>{tRoot("manager.sessionEnd")}</Label>
                             <Input name="endTime" type="datetime-local" defaultValue={nowLocal} required />
                           </div>
                           <div>
-                            <Label>Capacity</Label>
+                            <Label>{tRoot("manager.sessionCapacity")}</Label>
                             <Input name="capacity" type="number" min={1} max={500} defaultValue={facility.capacity} required />
                           </div>
                           <div>
-                            <Label>Price per seat (GEL)</Label>
+                            <Label>{tRoot("manager.pricePerSeat")}</Label>
                             <Input name="priceGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
                           </div>
                           <div className="sm:col-span-2">
-                            <Label>Instructor (optional)</Label>
-                            <Input name="instructor" placeholder="Anna T." />
+                            <Label>{tRoot("manager.instructor")}</Label>
+                            <Input name="instructor" placeholder={tRoot("manager.instructorPlaceholder")} />
                           </div>
                           <div className="sm:col-span-2">
-                            <Button type="submit" size="sm" variant="outline">Add session</Button>
+                            <Button type="submit" size="sm" variant="outline">{tRoot("manager.addSession")}</Button>
                           </div>
                         </form>
                       </div>
@@ -343,9 +340,7 @@ export default async function VenueManagePage({
                     {/* Drop-in info — only for DROP_IN */}
                     {isDropIn && (
                       <div className="rounded-[var(--radius-md)] border border-border bg-background p-4 text-sm text-muted">
-                        Drop-in facilities sell day passes. Players buy a pass for a given day
-                        — there&apos;s no schedule grid. Set venue opening hours under the profile tab,
-                        and define daily capacity above.
+                        {tRoot("manager.dropInExplainer")}
                       </div>
                     )}
 
@@ -397,7 +392,7 @@ export default async function VenueManagePage({
                     {/* Delete */}
                     <div className="flex items-center justify-between border-t border-border pt-3">
                       <span className="text-sm text-muted">
-                        {facility.isActive ? t("activeLabel") : "Inactive"} · {BOOKING_MODEL_LABELS[facility.bookingModel]} · {formatGEL(facility.pricePerHourGEL)}
+                        {facility.isActive ? t("activeLabel") : tRoot("manager.inactive")} · {tRoot(`bookingModels.${facility.bookingModel}` as never)} · {formatGEL(facility.pricePerHourGEL)}
                       </span>
                       <form action={deleteFacilityAction}>
                         <input type="hidden" name="facilityId" value={facility.id} />
@@ -417,29 +412,29 @@ export default async function VenueManagePage({
               <form action={createFacilityAction} className="grid max-w-xl gap-3 sm:grid-cols-2">
                 <input type="hidden" name="venueId" value={venue.id} />
                 <div>
-                  <Label>Name</Label>
+                  <Label>{t("courtName")}</Label>
                   <Input name="name" placeholder={t("courtPlaceholder")} required />
                 </div>
                 <div>
-                  <Label>Sport</Label>
+                  <Label>{tRoot("manager.sport")}</Label>
                   <Select name="sportId" defaultValue={defaultSport?.id}>
-                    {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {sports.map((s) => <option key={s.id} value={s.id}>{tSportName(tRoot, s.slug)}</option>)}
                   </Select>
                 </div>
                 <div>
-                  <Label>Booking model</Label>
+                  <Label>{tRoot("manager.bookingModelLabel")}</Label>
                   <Select name="bookingModel" defaultValue={defaultAdapter.defaults.bookingModel}>
-                    {Object.entries(BOOKING_MODEL_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
+                    {BOOKING_MODEL_KEYS.map((k) => (
+                      <option key={k} value={k}>{tRoot(`bookingModels.${k}` as never)}</option>
                     ))}
                   </Select>
                 </div>
                 <div>
-                  <Label>Capacity</Label>
+                  <Label>{tRoot("manager.capacity")}</Label>
                   <Input name="capacity" type="number" min={1} defaultValue={defaultAdapter.defaults.capacity} required />
                 </div>
                 <div>
-                  <Label>Price (GEL)</Label>
+                  <Label>{t("pricePerHour")}</Label>
                   <Input name="pricePerHourGEL" type="number" min={0} defaultValue={defaultAdapter.defaults.pricePerHourGEL} required />
                 </div>
                 <div className="flex items-end">

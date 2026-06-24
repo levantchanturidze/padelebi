@@ -1,12 +1,14 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, ArrowLeft } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SportBadge } from "@/components/sport/sport-badge";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
+import { tSportName } from "@/lib/sports";
 
 export async function generateMetadata({
   params,
@@ -17,8 +19,8 @@ export async function generateMetadata({
   const sport = await prisma.sport.findUnique({ where: { slug } });
   if (!sport) return { title: "Sport not found" };
   return {
-    title: `${sport.name} venues — Playtora`,
-    description: `Book ${sport.name.toLowerCase()} venues instantly. Real-time availability, transparent pricing.`,
+    title: `${sport.name} — Playtora`,
+    description: `Book ${sport.name.toLowerCase()} venues instantly on Playtora.`,
   };
 }
 
@@ -31,6 +33,7 @@ export default async function SportDetailPage({
 }) {
   const { slug } = await params;
   const { city } = await searchParams;
+  const t = await getTranslations();
 
   const sport = await prisma.sport.findUnique({ where: { slug } });
   if (!sport) notFound();
@@ -50,6 +53,14 @@ export default async function SportDetailPage({
     orderBy: { name: "asc" },
   });
 
+  const sportName = tSportName(t, sport.slug);
+  const venueCountLabel =
+    venues.length === 0
+      ? t("sportsPage.emptyVenues")
+      : venues.length === 1
+        ? t("sportsPage.venuesOne")
+        : t("sportsPage.venuesMany", { count: venues.length });
+
   return (
     <Container className="py-8 sm:py-12">
       <Link
@@ -57,31 +68,32 @@ export default async function SportDetailPage({
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        All sports
+        {t("sportsPage.allSports")}
       </Link>
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{sport.name}</h1>
-          <p className="mt-1 text-muted">
-            {venues.length === 0
-              ? "No venues yet — be the first to list yours."
-              : `${venues.length} ${venues.length === 1 ? "venue" : "venues"} accepting bookings`}
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{sportName}</h1>
+          <p className="mt-1 text-muted">{venueCountLabel}</p>
         </div>
         <Link
           href={`/venues?sport=${sport.slug}`}
           className="text-sm font-medium text-brand-600 hover:underline"
         >
-          Advanced search →
+          {t("sportsPage.advancedSearch")} →
         </Link>
       </div>
 
       {venues.length === 0 ? (
         <Card className="mt-10">
           <CardContent className="text-center text-sm text-muted">
-            We&apos;re onboarding {sport.name.toLowerCase()} venues now. Check back soon — or{" "}
-            <Link href="/register" className="text-brand-600 hover:underline">list yours</Link>.
+            {t.rich("sportsPage.noVenuesForSport", {
+              sport: sportName,
+            })}{" "}
+            <Link href="/register" className="text-brand-600 hover:underline">
+              {t("sportsPage.listYours")}
+            </Link>
+            .
           </CardContent>
         </Card>
       ) : (
@@ -91,6 +103,10 @@ export default async function SportDetailPage({
             const minPrice = venue.facilities.length
               ? Math.min(...venue.facilities.map((c) => c.pricePerHourGEL))
               : null;
+            const facilityCountLabel =
+              venue.facilities.length === 1
+                ? t("sportsPage.facilitiesOne")
+                : t("sportsPage.facilitiesMany", { count: venue.facilities.length });
             return (
               <Link key={venue.id} href={`/venues/${venue.slug}`}>
                 <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -104,14 +120,14 @@ export default async function SportDetailPage({
                       <MapPin className="h-3.5 w-3.5" /> {venue.city}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
-                      <SportBadge name={sport.name} />
+                      <SportBadge name={sportName} />
                     </div>
                     <div className="mt-3 flex items-center justify-between">
-                      <Badge tone="brand">
-                        {venue.facilities.length} {venue.facilities.length === 1 ? "facility" : "facilities"}
-                      </Badge>
+                      <Badge tone="brand">{facilityCountLabel}</Badge>
                       {minPrice !== null && (
-                        <span className="text-sm font-medium">from {formatGEL(minPrice)}/hr</span>
+                        <span className="text-sm font-medium">
+                          {t("favorites.fromPrice", { price: formatGEL(minPrice) })}
+                        </span>
                       )}
                     </div>
                   </CardContent>

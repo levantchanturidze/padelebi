@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { submitReviewAction } from "@/app/actions/review";
@@ -20,6 +21,7 @@ export function ReviewForm({
   initialRating?: number;
   initialComment?: string;
 }) {
+  const t = useTranslations("review");
   const [rating, setRating] = useState(initialRating);
   const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState(initialComment);
@@ -44,7 +46,7 @@ export function ReviewForm({
       <input type="hidden" name="slug" value={slug} />
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted">Your rating</p>
+        <p className="mb-1.5 text-xs font-medium text-muted">{t("yourRating")}</p>
         <div
           className="flex gap-0.5"
           onMouseLeave={() => setHovered(0)}
@@ -57,7 +59,7 @@ export function ReviewForm({
                 type="button"
                 onMouseEnter={() => setHovered(n)}
                 onClick={() => setRating(n)}
-                aria-label={`${n} ${n === 1 ? "star" : "stars"}`}
+                aria-label={t("starsLabel", { n })}
                 className="grid h-8 w-8 place-items-center rounded-[var(--radius-sm)] transition-transform hover:scale-110"
               >
                 <Star
@@ -72,22 +74,22 @@ export function ReviewForm({
       </div>
 
       <div>
-        <p className="mb-1.5 text-xs font-medium text-muted">Comment (optional)</p>
+        <p className="mb-1.5 text-xs font-medium text-muted">{t("commentOptional")}</p>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           rows={3}
           maxLength={2000}
-          placeholder="What was your experience?"
+          placeholder={t("placeholder")}
           className="w-full rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
         />
       </div>
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={disabled} size="sm">
-          {pending ? "Saving…" : initialRating > 0 ? "Update review" : "Post review"}
+          {pending ? t("saving") : initialRating > 0 ? t("updateReview") : t("postReview")}
         </Button>
-        {saved && <span className="text-xs text-brand-600">Saved.</span>}
+        {saved && <span className="text-xs text-brand-600">{t("saved")}</span>}
       </div>
     </form>
   );

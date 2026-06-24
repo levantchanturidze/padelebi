@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Input, Label, Select } from "@/components/ui/input";
 import type { AttributeField } from "@/lib/sports";
 
 /**
- * Adapter-driven form fragment for the sport-specific portion of the facility
- * form. Renders inputs based on the adapter's `formFields` declaration so
- * adding a new sport never requires touching this component.
+ * Adapter-driven sport-specific form fragment. All labels come from translation
+ * keys declared by the adapter, so switching locale switches every label.
  */
 export function AttributesForm({
   fields,
@@ -16,11 +16,10 @@ export function AttributesForm({
 }: {
   fields: ReadonlyArray<AttributeField>;
   initial: Record<string, unknown>;
-  /** Form field names are prefixed so the server action can demux them. */
   namePrefix?: string;
 }) {
-  // Stored as strings (form-friendly); converted back to typed values
-  // on the server by the adapter's zod schema.
+  // next-intl's `t` at the root translates by dot path, so we can pass any key.
+  const t = useTranslations();
   const [values, setValues] = useState<Record<string, string>>(() => {
     const out: Record<string, string> = {};
     for (const f of fields) {
@@ -42,10 +41,12 @@ export function AttributesForm({
     <div className="grid gap-3 sm:grid-cols-2">
       {fields.map((field) => {
         const inputName = `${namePrefix}${field.name}`;
+        const label = t(field.labelKey as never);
+
         if (field.kind === "select") {
           return (
             <div key={field.name}>
-              <Label htmlFor={inputName}>{field.label}</Label>
+              <Label htmlFor={inputName}>{label}</Label>
               <Select
                 id={inputName}
                 name={inputName}
@@ -54,7 +55,7 @@ export function AttributesForm({
               >
                 {field.options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                    {t(opt.labelKey as never)}
                   </option>
                 ))}
               </Select>
@@ -72,7 +73,7 @@ export function AttributesForm({
                 onChange={(e) => update(field.name, e.target.checked ? "on" : "")}
                 className="h-4 w-4 accent-[var(--color-brand-500)]"
               />
-              {field.label}
+              {label}
             </label>
           );
         }
@@ -80,7 +81,7 @@ export function AttributesForm({
           return (
             <div key={field.name}>
               <Label htmlFor={inputName}>
-                {field.label}
+                {label}
                 {field.suffix ? <span className="ml-1 text-muted">({field.suffix})</span> : null}
               </Label>
               <Input
@@ -98,12 +99,12 @@ export function AttributesForm({
         }
         return (
           <div key={field.name} className="sm:col-span-2">
-            <Label htmlFor={inputName}>{field.label}</Label>
+            <Label htmlFor={inputName}>{label}</Label>
             <Input
               id={inputName}
               name={inputName}
               type="text"
-              placeholder={field.placeholder}
+              placeholder={field.placeholderKey ? t(field.placeholderKey as never) : undefined}
               value={values[field.name] ?? ""}
               onChange={(e) => update(field.name, e.target.value)}
             />

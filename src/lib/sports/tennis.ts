@@ -10,16 +10,9 @@ const attributesSchema = z.object({
 
 type TennisAttributes = z.infer<typeof attributesSchema>;
 
-const SURFACE_LABELS: Record<(typeof TENNIS_SURFACES)[number], string> = {
-  CLAY: "Clay",
-  HARD: "Hard court",
-  GRASS: "Grass",
-  CARPET: "Carpet",
-};
-
 export const tennisAdapter: SportAdapter<TennisAttributes> = {
   slug: "tennis",
-  facilityNoun: { singular: "court", plural: "courts" },
+  facilityNounKey: { singular: "facilityNoun.court", plural: "facilityNoun.courts" },
   defaults: {
     slotMinutes: 60,
     pricePerHourGEL: 40,
@@ -28,32 +21,23 @@ export const tennisAdapter: SportAdapter<TennisAttributes> = {
     attributes: { surface: "HARD", lighting: false },
   },
   allowedAmenities: [
-    "PARKING",
-    "SHOWERS",
-    "LOCKER_ROOM",
-    "PRO_SHOP",
-    "CAFE",
-    "BALL_RENTAL",
-    "EQUIPMENT_RENTAL",
-    "LIGHTING",
-    "WHEELCHAIR_ACCESS",
-    "WIFI",
-    "WATER_FOUNTAIN",
+    "PARKING", "SHOWERS", "LOCKER_ROOM", "PRO_SHOP", "CAFE",
+    "BALL_RENTAL", "EQUIPMENT_RENTAL", "LIGHTING", "WHEELCHAIR_ACCESS", "WIFI", "WATER_FOUNTAIN",
   ],
   attributesSchema,
   summary(a) {
     return [
-      { label: "Surface", value: SURFACE_LABELS[a.surface] },
-      ...(a.lighting ? [{ label: "Floodlit", value: "Yes" }] : []),
+      { labelKey: "sportAttrs.tennis.surface", valueKey: `sportAttrs.tennis.surfaceOpts.${a.surface}` },
+      ...(a.lighting ? [{ labelKey: "sportAttrs.tennis.floodlit", valueKey: "sportAttrs.yes" }] : []),
     ];
   },
   formFields: [
     {
       kind: "select",
       name: "surface",
-      label: "Surface",
-      options: TENNIS_SURFACES.map((s) => ({ value: s, label: SURFACE_LABELS[s] })),
+      labelKey: "sportAttrs.tennis.surface",
+      options: TENNIS_SURFACES.map((s) => ({ value: s, labelKey: `sportAttrs.tennis.surfaceOpts.${s}` })),
     },
-    { kind: "boolean", name: "lighting", label: "Has floodlights" },
+    { kind: "boolean", name: "lighting", labelKey: "sportAttrs.tennis.lighting" },
   ],
 };
