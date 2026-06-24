@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { AttributesForm } from "@/components/facility/attributes-form";
+import { SportSurfacePicker } from "@/components/facility/sport-surface-picker";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { getOwnedVenue } from "@/lib/venue-access";
@@ -89,6 +90,20 @@ export default async function VenueManagePage({
 
   const defaultSport = sports.find((s) => s.slug === "padel") ?? sports[0];
   const defaultAdapter = getAdapter(defaultSport?.slug);
+
+  // Shared inputs for the SportSurfacePicker client component — strings are
+  // resolved server-side so the picker stays locale-agnostic.
+  const pickerSports = sports.map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    name: tSportName(tRoot, s.slug, s.name),
+  }));
+  const sportLabel = tRoot("manager.sport");
+  const surfaceLabel = tRoot("filters.surface");
+  const anyLabel = tRoot("filters.anySurface");
+  const surfaceLabels: Record<string, string> = Object.fromEntries(
+    SURFACE_CATEGORIES.map((s) => [s, tRoot(`filters.surfaceOpts.${s}` as never)]),
+  );
 
   return (
     <DashboardShell title={venue.name} subtitle={`${venue.city} · ${venue.status.toLowerCase()}`} nav={MANAGER_NAV} current="/manager">
@@ -213,12 +228,15 @@ export default async function VenueManagePage({
                         <Label>{t("courtName")}</Label>
                         <Input name="name" defaultValue={facility.name} required />
                       </div>
-                      <div>
-                        <Label>{tRoot("manager.sport")}</Label>
-                        <Select name="sportId" defaultValue={facility.sportId}>
-                          {sports.map((s) => <option key={s.id} value={s.id}>{tSportName(tRoot, s.slug)}</option>)}
-                        </Select>
-                      </div>
+                      <SportSurfacePicker
+                        sports={pickerSports}
+                        defaultSportId={facility.sportId}
+                        defaultSurface={facility.surfaceCategory ?? ""}
+                        sportLabel={sportLabel}
+                        surfaceLabel={surfaceLabel}
+                        anyLabel={anyLabel}
+                        surfaceLabels={surfaceLabels}
+                      />
                       <div>
                         <Label>{tRoot("manager.bookingModelLabel")}</Label>
                         <Select name="bookingModel" defaultValue={facility.bookingModel}>
@@ -234,15 +252,6 @@ export default async function VenueManagePage({
                       <div>
                         <Label>{isDropIn ? tRoot("manager.dayPassPrice") : isClass ? tRoot("manager.defaultClassPrice") : t("pricePerHour")}</Label>
                         <Input name="pricePerHourGEL" type="number" min={0} defaultValue={facility.pricePerHourGEL} required />
-                      </div>
-                      <div>
-                        <Label>{tRoot("filters.surface")}</Label>
-                        <Select name="surfaceCategory" defaultValue={facility.surfaceCategory ?? ""}>
-                          <option value="">{tRoot("filters.anySurface")}</option>
-                          {SURFACE_CATEGORIES.map((s) => (
-                            <option key={s} value={s}>{tRoot(`filters.surfaceOpts.${s}` as never)}</option>
-                          ))}
-                        </Select>
                       </div>
                       <div className="flex items-end gap-6">
                         <label className="flex items-center gap-2 text-sm">
@@ -441,12 +450,15 @@ export default async function VenueManagePage({
                   <Label>{t("courtName")}</Label>
                   <Input name="name" placeholder={t("courtPlaceholder")} required />
                 </div>
-                <div>
-                  <Label>{tRoot("manager.sport")}</Label>
-                  <Select name="sportId" defaultValue={defaultSport?.id}>
-                    {sports.map((s) => <option key={s.id} value={s.id}>{tSportName(tRoot, s.slug)}</option>)}
-                  </Select>
-                </div>
+                <SportSurfacePicker
+                  sports={pickerSports}
+                  defaultSportId={defaultSport?.id ?? ""}
+                  defaultSurface=""
+                  sportLabel={sportLabel}
+                  surfaceLabel={surfaceLabel}
+                  anyLabel={anyLabel}
+                  surfaceLabels={surfaceLabels}
+                />
                 <div>
                   <Label>{tRoot("manager.bookingModelLabel")}</Label>
                   <Select name="bookingModel" defaultValue={defaultAdapter.defaults.bookingModel}>
@@ -462,15 +474,6 @@ export default async function VenueManagePage({
                 <div>
                   <Label>{t("pricePerHour")}</Label>
                   <Input name="pricePerHourGEL" type="number" min={0} defaultValue={defaultAdapter.defaults.pricePerHourGEL} required />
-                </div>
-                <div>
-                  <Label>{tRoot("filters.surface")}</Label>
-                  <Select name="surfaceCategory" defaultValue="">
-                    <option value="">{tRoot("filters.anySurface")}</option>
-                    {SURFACE_CATEGORIES.map((s) => (
-                      <option key={s} value={s}>{tRoot(`filters.surfaceOpts.${s}` as never)}</option>
-                    ))}
-                  </Select>
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 text-sm">
