@@ -14,6 +14,21 @@ import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity, cityCentroid } from "@/lib/city-map";
 import { AMENITIES } from "@/lib/enums";
 import { tSportName } from "@/lib/sports";
+import { canonical, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Find venues",
+  description: "Discover and book sports venues across Georgia — by city, sport, time and price.",
+  alternates: { canonical: canonical("/venues") },
+  openGraph: {
+    title: "Find sports venues",
+    description: "Discover and book sports venues across Georgia.",
+    url: canonical("/venues"),
+    type: "website",
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
+  },
+};
 
 const TIME_OPTIONS = Array.from({ length: 18 }, (_, i) => {
   const h = i + 6;

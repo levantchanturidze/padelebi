@@ -6,10 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { SportIcon } from "@/components/sport/sport-icon";
 import { prisma } from "@/lib/prisma";
 import { tSportName, tSportCategory } from "@/lib/sports";
+import { canonical, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Sports — Playtora",
-  description: "Browse every sport on Playtora.",
+export const metadata: Metadata = {
+  title: "Sports",
+  description: "Browse every sport on Playtora — padel, tennis, football, basketball, gym and more.",
+  alternates: { canonical: canonical("/sports") },
+  openGraph: {
+    title: "All sports on Playtora",
+    description: "Padel, tennis, football, basketball, gym and more.",
+    url: canonical("/sports"),
+    type: "website",
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
+  },
 };
 
 export default async function SportsCatalogPage() {

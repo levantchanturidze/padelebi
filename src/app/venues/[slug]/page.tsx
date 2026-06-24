@@ -20,11 +20,58 @@ import { getCurrentUser } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { AMENITY_LABELS, type Amenity } from "@/lib/enums";
 import { getAdapter, parseAttributes, tSportName, tSummaryValue } from "@/lib/sports";
+import { canonical, venueOgImage, ogLocale } from "@/lib/seo";
+import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 
 function bookingModelHeader(model: string, t: (k: string) => string): string {
   if (model === "CLASS") return t("venueDetail.joinClass");
   if (model === "DROP_IN") return t("venueDetail.dayPass");
   return t("venueDetail.book");
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [venue, locale] = await Promise.all([
+    prisma.venue.findFirst({
+      where: { slug, status: "APPROVED" },
+      select: { name: true, description: true, city: true, slug: true },
+    }),
+    getLocale(),
+  ]);
+
+  if (!venue) return { title: "Venue not found" };
+
+  const description =
+    venue.description?.slice(0, 160) ||
+    `Book ${venue.name} in ${venue.city} on Playtora. Real-time availability, instant booking.`;
+
+  const url = canonical(`/venues/${venue.slug}`);
+  const og = venueOgImage(venue.slug);
+
+  return {
+    title: `${venue.name} · ${venue.city}`,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: venue.name,
+      description,
+      url,
+      type: "website",
+      locale: ogLocale(locale),
+      images: [{ url: og, width: 1200, height: 630, alt: venue.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: venue.name,
+      description,
+      images: [og],
+    },
+  };
 }
 
 function parseDateParam(date?: string): Date {
@@ -136,8 +183,56 @@ export default async function VenueDetailPage({
         }))
       : [];
 
+  // schema.org JSON-LD — SportsActivityLocation
+  const minFacilityPrice = venue.facilities.length
+    ? Math.min(...venue.facilities.map((f) => f.pricePerHourGEL))
+    : null;
+  const maxFacilityPrice = venue.facilities.length
+    ? Math.max(...venue.facilities.map((f) => f.pricePerHourGEL))
+    : null;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsActivityLocation",
+    name: venue.name,
+    description: venue.description || undefined,
+    url: `/venues/${venue.slug}`,
+    image: photos[0] ? [photos[0]] : undefined,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: venue.address,
+      addressLocality: venue.city,
+      addressCountry: "GE",
+    },
+    geo:
+      typeof venue.lat === "number" && typeof venue.lng === "number"
+        ? {
+            "@type": "GeoCoordinates",
+            latitude: venue.lat,
+            longitude: venue.lng,
+          }
+        : undefined,
+    priceRange:
+      minFacilityPrice !== null && maxFacilityPrice !== null
+        ? `₾${minFacilityPrice}-${maxFacilityPrice}`
+        : undefined,
+    aggregateRating:
+      reviewCount > 0
+        ? {
+            "@type": "AggregateRating",
+            ratingValue: Number(avgRating.toFixed(1)),
+            reviewCount,
+          }
+        : undefined,
+    sport: sportTags.map((s) => s.name),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        // schema.org JSON-LD; safe — values come from our own DB.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <PhotoGallery photos={photos} />
       <Container className="py-6 sm:py-8">
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-8">

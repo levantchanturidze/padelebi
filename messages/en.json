@@ -94,6 +94,14 @@
     "noVenuesWithCoords": "These venues don't have coordinates yet.",
     "viewVenue": "View venue"
   },
+  "notFound": {
+    "title": "This page got lost.",
+    "description": "We couldn't find what you were looking for. Try a search or pick a sport below.",
+    "searchPlaceholder": "Search by city…",
+    "search": "Search",
+    "popularSports": "Popular sports",
+    "backHome": "Back to home"
+  },
   "geo": {
     "useMyLocation": "Use my location",
     "finding": "Finding you…",

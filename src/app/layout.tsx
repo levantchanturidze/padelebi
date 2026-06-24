@@ -7,14 +7,33 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { getCurrentUser } from "@/lib/session";
+import { SITE_URL, SITE_NAME, TWITTER_HANDLE, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Playtora — Find and book sports venues",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} — Find and book sports venues`,
+    template: `%s — ${SITE_NAME}`,
+  },
   description:
     "Discover and book padel, tennis, football and more — real-time availability, instant booking, any sport.",
+  openGraph: {
+    siteName: SITE_NAME,
+    type: "website",
+    url: SITE_URL,
+    images: [{ url: DEFAULT_OG_IMAGE, width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: TWITTER_HANDLE,
+    creator: TWITTER_HANDLE,
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: { canonical: SITE_URL },
+  robots: { index: true, follow: true },
 };
 
 export default async function RootLayout({

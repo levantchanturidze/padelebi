@@ -11,18 +11,44 @@ import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { tSportName } from "@/lib/sports";
+import { canonical, sportOgImage, ogLocale } from "@/lib/seo";
+import type { Metadata } from "next";
+import { getLocale } from "next-intl/server";
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+}): Promise<Metadata> {
   const { slug } = await params;
-  const sport = await prisma.sport.findUnique({ where: { slug } });
+  const [sport, locale] = await Promise.all([
+    prisma.sport.findUnique({ where: { slug } }),
+    getLocale(),
+  ]);
   if (!sport) return { title: "Sport not found" };
+
+  const url = canonical(`/sports/${slug}`);
+  const og = sportOgImage(slug);
+  const description = `Book ${sport.name.toLowerCase()} venues across Georgia on Playtora. Real-time availability, instant booking.`;
+
   return {
-    title: `${sport.name} — Playtora`,
-    description: `Book ${sport.name.toLowerCase()} venues instantly on Playtora.`,
+    title: sport.name,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: sport.name,
+      description,
+      url,
+      type: "website",
+      locale: ogLocale(locale),
+      images: [{ url: og, width: 1200, height: 630, alt: sport.name }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: sport.name,
+      description,
+      images: [og],
+    },
   };
 }
 
@@ -137,8 +163,26 @@ export default async function SportDetailPage({
     </div>
   );
 
+  // schema.org JSON-LD — SportsActivity collection
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: sportName,
+    description: `${sportName} venues on Playtora`,
+    url: `/sports/${slug}`,
+    about: {
+      "@type": "SportsActivity",
+      name: sportName,
+    },
+    numberOfItems: venues.length,
+  };
+
   return (
     <Container className="py-8 sm:py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link
         href="/sports"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
