@@ -431,7 +431,25 @@
     "showingBookings": "{count} bookings",
     "revenueFiltered": "Revenue",
     "createdAt": "Joined",
-    "submittedAt": "Submitted"
+    "submittedAt": "Submitted",
+    "sportsTab": "Sports",
+    "sportsSubtitle": "Choose which sports show up in the filter and the venue forms. Add new sports as needed."
+  },
+  "adminSports": {
+    "helper": "Toggle a sport off to hide it from the /venues filter and the manager facility form. Existing facilities tied to it are preserved.",
+    "name": "Display name",
+    "slug": "Slug",
+    "category": "Category",
+    "icon": "Icon",
+    "sortOrder": "Sort order",
+    "save": "Save",
+    "active": "Visible",
+    "hidden": "Hidden",
+    "hide": "Hide",
+    "show": "Show",
+    "facilitiesLinked": "facilities linked",
+    "addNew": "Add a new sport",
+    "create": "Create sport"
   },
   "photos": {
     "clubPhotos": "Venue photos",

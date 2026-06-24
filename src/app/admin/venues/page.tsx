@@ -38,6 +38,7 @@ export default async function AdminVenuesPage({
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
     { href: "/admin/venues", label: t("clubs") },
+    { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
   ];

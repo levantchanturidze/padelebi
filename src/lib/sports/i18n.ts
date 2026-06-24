@@ -5,13 +5,24 @@
 
 type Translator = (key: string, values?: Record<string, string | number>) => string;
 
-/** Translate a sport.slug. Falls back to the slug itself if no key exists. */
-export function tSportName(t: Translator, slug: string): string {
+/**
+ * Translate a sport.slug to its localized name.
+ *
+ * Fallback chain:
+ *   1. `sports.names.<slug>` translation key (built-in sports have these)
+ *   2. `fallbackName` (the DB-stored Sport.name — admin-created sports)
+ *   3. the slug itself (last resort)
+ */
+export function tSportName(t: Translator, slug: string, fallbackName?: string): string {
   try {
-    return t(`sports.names.${slug}` as never);
+    const value = t(`sports.names.${slug}` as never);
+    // next-intl returns the key itself when missing in some modes — treat
+    // that as "no translation" and fall through.
+    if (value && value !== `sports.names.${slug}`) return value;
   } catch {
-    return slug;
+    /* fall through */
   }
+  return fallbackName ?? slug;
 }
 
 /** Translate a sport.category. Falls back to the raw category string. */
