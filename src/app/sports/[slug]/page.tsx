@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { MapPin, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { SportBadge } from "@/components/sport/sport-badge";
-import { VenuesView, VenueCardSync } from "@/components/map/VenuesView";
+import { VenuesView } from "@/components/map/VenuesView";
 import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
@@ -97,6 +95,8 @@ export default async function SportDetailPage({
       const minPrice = v.facilities.length
         ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL))
         : null;
+      const photos = parseJSON<string[]>(v.photos, []);
+      const facilityCount = v.facilities.length;
       return {
         id: v.id,
         slug: v.slug,
@@ -105,63 +105,18 @@ export default async function SportDetailPage({
         lat: v.lat,
         lng: v.lng,
         minPriceGEL: minPrice,
-        sports: [{ slug: sport.slug, name: sportName }],
+        sports: [{ id: sport.id, slug: sport.slug, name: sportName }],
         primarySportSlug: sport.slug,
+        coverPhoto: photos[0] ?? null,
+        facilityCount,
+        facilityCountLabel:
+          facilityCount === 1
+            ? t("sportsPage.facilitiesOne")
+            : t("sportsPage.facilitiesMany", { count: facilityCount }),
+        minPriceLabel:
+          minPrice !== null ? t("favorites.fromPrice", { price: formatGEL(minPrice) }) : null,
       };
     });
-
-  const venueDetails = new Map(
-    venues.map((v) => [
-      v.id,
-      {
-        photos: parseJSON<string[]>(v.photos, []),
-        minPrice: v.facilities.length ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL)) : null,
-        facilityCount: v.facilities.length,
-      },
-    ]),
-  );
-
-  const renderList = (vs: (typeof mapVenues[number] & { distanceKm?: number })[]) => (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {vs.map((v) => {
-        const det = venueDetails.get(v.id);
-        if (!det) return null;
-        const facilityCountLabel =
-          det.facilityCount === 1
-            ? t("sportsPage.facilitiesOne")
-            : t("sportsPage.facilitiesMany", { count: det.facilityCount });
-        return (
-          <VenueCardSync key={v.id} venueId={v.id} distanceKm={v.distanceKm}>
-            <Link href={`/venues/${v.slug}`}>
-              <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                <div
-                  className="h-40 bg-brand-100 bg-cover bg-center"
-                  style={det.photos[0] ? { backgroundImage: `url(${det.photos[0]})` } : undefined}
-                />
-                <CardContent>
-                  <h3 className="font-semibold">{v.name}</h3>
-                  <p className="mt-1 flex items-center gap-1 text-sm text-muted">
-                    <MapPin className="h-3.5 w-3.5" /> {v.city}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    <SportBadge name={sportName} slug={sport.slug} />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <Badge tone="brand">{facilityCountLabel}</Badge>
-                    {det.minPrice !== null && (
-                      <span className="text-sm font-medium">
-                        {t("favorites.fromPrice", { price: formatGEL(det.minPrice) })}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </VenueCardSync>
-        );
-      })}
-    </div>
-  );
 
   // schema.org JSON-LD — SportsActivity collection
   const jsonLd = {
@@ -216,7 +171,7 @@ export default async function SportDetailPage({
         </Card>
       ) : (
         <div className="mt-8">
-          <VenuesView renderList={renderList} venues={mapVenues} />
+          <VenuesView venues={mapVenues} />
         </div>
       )}
     </Container>

@@ -6,8 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SportBadge } from "@/components/sport/sport-badge";
-import { VenuesView, VenueCardSync } from "@/components/map/VenuesView";
+import { VenuesView } from "@/components/map/VenuesView";
 import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { parseJSON, formatGEL } from "@/lib/utils";
@@ -251,7 +250,7 @@ export default async function VenuesPage({
       {filtered.length === 0 ? (
         <p className="mt-16 text-center text-muted">{t("noResults")}</p>
       ) : (() => {
-        // Map-ready view (only venues with coordinates).
+        const centroid = cityCentroid(city);
         const mapVenues: MapVenue[] = filtered
           .filter((v): v is typeof v & { lat: number; lng: number } =>
             typeof v.lat === "number" && typeof v.lng === "number",
@@ -263,6 +262,7 @@ export default async function VenuesPage({
             const minPrice = v.facilities.length
               ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL))
               : null;
+            const photos = parseJSON<string[]>(v.photos, []);
             return {
               id: v.id,
               slug: v.slug,
@@ -271,76 +271,23 @@ export default async function VenuesPage({
               lat: v.lat,
               lng: v.lng,
               minPriceGEL: minPrice,
-              sports: sportTags.map((s) => ({ slug: s.slug, name: s.name })),
+              sports: sportTags.map((s) => ({
+                id: s.id,
+                slug: s.slug,
+                name: tSportName(tRoot, s.slug),
+              })),
               primarySportSlug: sportTags[0]?.slug ?? "default",
+              coverPhoto: photos[0] ?? null,
+              facilityCount: v.facilities.length,
+              facilityCountLabel: t("courts", { count: v.facilities.length }),
+              minPriceLabel:
+                minPrice !== null ? t("fromPrice", { price: formatGEL(minPrice) }) : null,
             };
           });
-
-        const centroid = cityCentroid(city);
-
-        // Lookup of the photos / facilities so the list-renderer can still find
-        // the original venue when the map view re-sorts the array by distance.
-        const venueDetails = new Map(
-          filtered.map((v) => [
-            v.id,
-            {
-              photos: parseJSON<string[]>(v.photos, []),
-              minPrice: v.facilities.length
-                ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL))
-                : null,
-              facilityCount: v.facilities.length,
-              sportTags: Array.from(new Map(v.facilities.map((f) => [f.sport.id, f.sport])).values()),
-            },
-          ]),
-        );
-
-        const renderList = (vs: (typeof mapVenues[number] & { distanceKm?: number })[]) => (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {vs.map((venue) => {
-              const det = venueDetails.get(venue.id);
-              if (!det) return null;
-              return (
-                <VenueCardSync key={venue.id} venueId={venue.id} distanceKm={venue.distanceKm}>
-                  <Link href={`/venues/${venue.slug}`}>
-                    <Card className="overflow-hidden transition-shadow hover:shadow-md">
-                      <div
-                        className="h-40 bg-brand-100 bg-cover bg-center"
-                        style={det.photos[0] ? { backgroundImage: `url(${det.photos[0]})` } : undefined}
-                      />
-                      <CardContent>
-                        <h3 className="font-semibold">{venue.name}</h3>
-                        <p className="mt-1 flex items-center gap-1 text-sm text-muted">
-                          <MapPin className="h-3.5 w-3.5" /> {venue.city}
-                        </p>
-                        {det.sportTags.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {det.sportTags.slice(0, 4).map((s) => (
-                              <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} slug={s.slug} />
-                            ))}
-                            {det.sportTags.length > 4 && (
-                              <span className="text-[11px] text-muted">+{det.sportTags.length - 4}</span>
-                            )}
-                          </div>
-                        )}
-                        <div className="mt-3 flex items-center justify-between">
-                          <Badge tone="brand">{t("courts", { count: det.facilityCount })}</Badge>
-                          {det.minPrice !== null && (
-                            <span className="text-sm font-medium">{t("fromPrice", { price: formatGEL(det.minPrice) })}</span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </VenueCardSync>
-              );
-            })}
-          </div>
-        );
 
         return (
           <div className="mt-8">
             <VenuesView
-              renderList={renderList}
               venues={mapVenues}
               initialCenter={centroid ?? undefined}
               initialZoom={centroid ? 12 : undefined}
