@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { signIn, signOut } from "@/lib/auth";
+import { notifyPasswordReset } from "@/lib/notify";
 
 const registerSchema = z
   .object({
@@ -106,8 +107,7 @@ export async function forgotPasswordAction(
   await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } });
   await prisma.passwordResetToken.create({ data: { userId: user.id, token, expiresAt } });
 
-  // TODO: send email with reset link: /reset-password?token=<token>
-  console.log(`[Password Reset] ${email} → /reset-password?token=${token}`);
+  await notifyPasswordReset({ email, locale: user.locale, token });
 
   return { success: "If that email exists, a reset link has been sent." };
 }

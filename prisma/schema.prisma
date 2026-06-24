@@ -40,6 +40,8 @@ model User {
   role         String   @default("PLAYER") // PLAYER | CLUB_ADMIN | PLATFORM_ADMIN
   phone        String?
   skillLevel   String? // BEGINNER | INTERMEDIATE | ADVANCED | PRO
+  /// Preferred locale for transactional emails (ka | en).
+  locale       String   @default("ka")
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
@@ -154,6 +156,8 @@ model Booking {
   status         String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
   paymentStatus  String   @default("UNPAID") // UNPAID | PAID | REFUNDED
   notes          String?
+  /// Null until the 24h reminder cron sends an email. Idempotency guard.
+  reminderSentAt DateTime?
   createdAt      DateTime @default(now())
 
   facility     Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)

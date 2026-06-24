@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { SessionUser } from "./session";
+import { notifyBookingConfirmed, notifyBookingCancelled } from "./notify";
 
 export class BookingError extends Error {}
 
@@ -69,7 +70,7 @@ export async function createBooking(input: CreateBookingInput) {
     const durationHours = (endTime.getTime() - startTime.getTime()) / 3_600_000;
     const priceGEL = Math.round(facility.pricePerHourGEL * durationHours);
 
-    return tx.booking.create({
+    const booking = await tx.booking.create({
       data: {
         facilityId,
         userId,
@@ -81,6 +82,11 @@ export async function createBooking(input: CreateBookingInput) {
         notes: notes || null,
       },
     });
+
+    // Fire-and-forget confirmation email. Side effect runs after tx commits.
+    void notifyBookingConfirmed(booking.id);
+
+    return booking;
   });
 }
 
@@ -117,7 +123,7 @@ export async function createClassBooking(input: CreateClassBookingInput) {
 
     const priceGEL = session.priceGEL * attendees;
 
-    return tx.booking.create({
+    const booking = await tx.booking.create({
       data: {
         facilityId: session.facilityId,
         classSessionId: session.id,
@@ -131,6 +137,10 @@ export async function createClassBooking(input: CreateClassBookingInput) {
         notes: notes || null,
       },
     });
+
+    void notifyBookingConfirmed(booking.id);
+
+    return booking;
   });
 }
 
@@ -167,7 +177,7 @@ export async function createDropInPass(input: CreateDropInInput) {
     });
     if (existing) return existing;
 
-    return tx.booking.create({
+    const booking = await tx.booking.create({
       data: {
         facilityId,
         userId,
@@ -180,6 +190,10 @@ export async function createDropInPass(input: CreateDropInInput) {
         notes: notes || null,
       },
     });
+
+    void notifyBookingConfirmed(booking.id);
+
+    return booking;
   });
 }
 
@@ -212,10 +226,14 @@ export async function cancelBooking(bookingId: string, actor: SessionUser) {
     }
   }
 
-  return prisma.booking.update({
+  const updated = await prisma.booking.update({
     where: { id: bookingId },
     data: { status: "CANCELLED" },
   });
+
+  void notifyBookingCancelled(updated.id);
+
+  return updated;
 }
 
 export async function rescheduleBooking({
