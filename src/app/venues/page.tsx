@@ -256,7 +256,7 @@ export default async function VenuesPage({
                   {sportTags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {sportTags.slice(0, 4).map((s) => (
-                        <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} />
+                        <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} slug={s.slug} />
                       ))}
                       {sportTags.length > 4 && (
                         <span className="text-[11px] text-muted">+{sportTags.length - 4}</span>

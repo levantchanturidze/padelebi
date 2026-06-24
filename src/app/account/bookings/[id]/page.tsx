@@ -90,10 +90,10 @@ export default async function BookingDetailPage({
         <div className="mb-6 flex flex-col items-center text-center">
           <div
             className={[
-              "flex h-16 w-16 items-center justify-center rounded-full shadow-brand",
+              "flex h-16 w-16 items-center justify-center rounded-full",
               isCancelled
                 ? "bg-red-100"
-                : "bg-gradient-to-b from-brand-400 to-brand-600",
+                : "bg-gradient-to-b from-emerald-400 to-success shadow-[0_4px_20px_-4px_rgba(0,184,107,0.55)]",
             ].join(" ")}
           >
             <Check className={["h-8 w-8", isCancelled ? "text-red-500" : "text-white"].join(" ")} />

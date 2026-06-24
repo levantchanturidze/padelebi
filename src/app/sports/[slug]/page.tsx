@@ -120,7 +120,7 @@ export default async function SportDetailPage({
                       <MapPin className="h-3.5 w-3.5" /> {venue.city}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1">
-                      <SportBadge name={sportName} />
+                      <SportBadge name={sportName} slug={sport.slug} />
                     </div>
                     <div className="mt-3 flex items-center justify-between">
                       <Badge tone="brand">{facilityCountLabel}</Badge>

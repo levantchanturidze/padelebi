@@ -84,7 +84,7 @@ export default async function FavoritesPage() {
                       {sportTags.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {sportTags.slice(0, 3).map((s) => (
-                            <SportBadge key={s.id} name={tSportName(t, s.slug)} />
+                            <SportBadge key={s.id} name={tSportName(t, s.slug)} slug={s.slug} />
                           ))}
                         </div>
                       )}

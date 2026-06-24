@@ -1,15 +1,16 @@
-import { Trophy } from "lucide-react";
+import { SportIcon } from "./sport-icon";
 
 /**
- * Minimal sport badge used on venue/facility cards. We use lucide's Trophy as
- * a sport-neutral icon for now — per-sport icons live in the Sport.icon column
- * for later, when we wire dynamic icon resolution.
+ * Sport chip used on venue / facility cards. Resolves the sport icon by slug
+ * so each sport reads as itself rather than via a generic trophy.
  */
 export function SportBadge({
   name,
+  slug,
   className = "",
 }: {
   name: string;
+  slug?: string;
   className?: string;
 }) {
   return (
@@ -19,7 +20,7 @@ export function SportBadge({
         className,
       ].join(" ")}
     >
-      <Trophy className="h-3 w-3" />
+      {slug ? <SportIcon slug={slug} className="h-3 w-3" /> : null}
       {name}
     </span>
   );

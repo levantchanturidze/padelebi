@@ -163,7 +163,7 @@ export default async function VenueDetailPage({
                         className={[
                           "rounded-full border px-3 py-1 text-sm",
                           c.id === selectedFacility.id
-                            ? "border-brand-500 bg-brand-50 text-brand-700"
+                            ? "border-brand-500 bg-brand-50 text-foreground"
                             : "border-border text-muted hover:text-foreground",
                         ].join(" ")}
                       >
@@ -187,7 +187,7 @@ export default async function VenueDetailPage({
                               className={[
                                 "flex min-w-[3.25rem] flex-col items-center rounded-[var(--radius-md)] border px-2 py-1.5 text-center text-xs",
                                 active
-                                  ? "border-brand-500 bg-brand-500 text-white"
+                                  ? "border-brand-600 bg-brand-500 text-foreground"
                                   : "border-border hover:border-brand-400",
                               ].join(" ")}
                             >
@@ -259,7 +259,7 @@ export default async function VenueDetailPage({
             {sportTags.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {sportTags.map((s) => (
-                  <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} />
+                  <SportBadge key={s.id} name={tSportName(tRoot, s.slug)} slug={s.slug} />
                 ))}
                 {reviewCount > 0 && (
                   <Rating value={avgRating} count={reviewCount} />
@@ -351,9 +351,9 @@ export default async function VenueDetailPage({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{c.name}</span>
-                          <SportBadge name={tSportName(tRoot, c.sport.slug)} />
+                          <SportBadge name={tSportName(tRoot, c.sport.slug)} slug={c.sport.slug} />
                         </div>
-                        <span className="font-medium text-brand-600">{priceLabel}</span>
+                        <span className="font-medium text-foreground">{priceLabel}</span>
                       </div>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {summary.map((row) => (

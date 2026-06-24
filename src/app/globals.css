@@ -1,34 +1,47 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------------
-   Playtora design system v2  — calm, modern, sports-premium
-   2026 trends: glassmorphism, bento grids, gradient depth, micro-interactions
+   Playtora design system — Obsidian + Bone + Volt + Cobalt
+   - Obsidian (foreground): premium, sophisticated neutral
+   - Bone (background): warm off-white, premium feel vs stark white
+   - Volt (brand accent): single signature color, CTAs + active states only
+   - Cobalt (secondary): links, B2B / manager UI, trust signals
+   Volt is the brand's signature — restricted to action, never decorative.
 --------------------------------------------------------------------------- */
 @theme {
-  --color-background: #edf2ee;
-  --color-surface: #ffffff;
-  --color-foreground: #0b1a10;
-  --color-muted: #50635a;
-  --color-border: #dbe4dd;
+  --color-background: #F7F6F2;   /* Bone */
+  --color-surface:    #FFFFFF;
+  --color-foreground: #0B0E14;   /* Obsidian */
+  --color-muted:      #6B7280;   /* Ash */
+  --color-border:     #E5E4DD;   /* Bone-on-Bone divider */
 
-  /* Brand: padel-court green — richer, deeper */
-  --color-brand-50:  #e6faee;
-  --color-brand-100: #c3f2d4;
-  --color-brand-200: #8fe4ae;
-  --color-brand-300: #50cf82;
-  --color-brand-400: #24b560;
-  --color-brand-500: #15a347;
-  --color-brand-600: #11833a;
-  --color-brand-700: #0d642d;
-  --color-brand-800: #0a4c21;
-  --color-brand-900: #073619;
+  /* Brand: Volt — electric green-yellow. Dark text always on Volt. */
+  --color-brand-50:  #FBFFED;
+  --color-brand-100: #F4FFCC;
+  --color-brand-200: #E9FF99;
+  --color-brand-300: #DAFF66;
+  --color-brand-400: #CFFF4D;
+  --color-brand-500: #C4FF3D;    /* Volt — the signature */
+  --color-brand-600: #B0E633;    /* Volt darkened, for hovers / depth */
+  --color-brand-700: #8FBB28;
+  --color-brand-800: #6E8F1F;
+  --color-brand-900: #4F6716;
 
-  /* Accent: electric lime — the ball */
-  --color-accent: #aaef2c;
+  /* Secondary: Cobalt — quiet trust, for links and B2B contexts. */
+  --color-cobalt-50:  #EEF1FF;
+  --color-cobalt-100: #DAE0FF;
+  --color-cobalt-200: #B7C2FF;
+  --color-cobalt-500: #2A4FFF;
+  --color-cobalt-600: #1F3FE3;
+  --color-cobalt-700: #182FB0;
 
-  --color-danger:  #dc2626;
-  --color-warning: #d97706;
-  --color-success: #15a347;
+  /* Legacy accent slot — kept for components that read --color-accent.
+     Now mirrors Volt so existing accent classes still match the brand. */
+  --color-accent: #C4FF3D;
+
+  --color-danger:  #DC2626;
+  --color-warning: #D97706;
+  --color-success: #00B86B;       /* Field — confirmation green */
 
   --radius-sm:  0.375rem;
   --radius-md:  0.625rem;
@@ -52,24 +65,53 @@ body {
 }
 
 /* ── Hero gradient ─────────────────────────────────────────────────────── */
-/* Deep court atmosphere: dark forest base + green radial glow + lime hint */
+/* Playtora hero: Obsidian base + subtle Volt glow + Cobalt depth.
+   The court-grid overlay is gone — Playtora is sport-neutral, not padel. */
+.bg-hero {
+  position: relative;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 95% 0%,   rgba(196, 255, 61, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 0%  100%, rgba(42, 79, 255, 0.20)  0%, transparent 55%),
+    linear-gradient(160deg, #0B0E14 0%, #11151E 50%, #0B0E14 100%);
+}
+
+/* Hero hairline — single horizontal stroke beneath, echoes the brand's
+   "court line" motif but reads as a sideline, not a padel-specific overlay. */
+.bg-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 255, 61, 0.45) 25%,
+    rgba(196, 255, 61, 0.45) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Backwards-compatible alias — old components still reference .bg-court. */
 .bg-court {
   position: relative;
   background-image:
-    radial-gradient(ellipse 90% 60% at 95% -5%,  rgba(21,163,71,0.30) 0%, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 5%  110%, rgba(170,239,44,0.12) 0%, transparent 50%),
-    linear-gradient(155deg, #061309 0%, #0a2212 30%, #0d3119 60%, #0a2714 100%);
+    radial-gradient(ellipse 80% 50% at 95% 0%,   rgba(196, 255, 61, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 0%  100%, rgba(42, 79, 255, 0.20)  0%, transparent 55%),
+    linear-gradient(160deg, #0B0E14 0%, #11151E 50%, #0B0E14 100%);
 }
-
-/* Subtle grid-line overlay for court feel */
 .bg-court::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 60px 60px;
+  inset: auto 0 0 0;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(196, 255, 61, 0.45) 25%,
+    rgba(196, 255, 61, 0.45) 75%,
+    transparent 100%
+  );
   pointer-events: none;
 }
 
@@ -88,29 +130,31 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
-/* ── Brand glow ────────────────────────────────────────────────────────── */
+/* ── Brand glow — Volt halo for CTAs and confirmation moments ─────────── */
 .shadow-brand {
-  box-shadow: 0 4px 20px -4px rgba(21,163,71,0.45), 0 2px 8px -2px rgba(21,163,71,0.3);
+  box-shadow:
+    0 4px 20px -4px rgba(196, 255, 61, 0.55),
+    0 2px 8px  -2px rgba(196, 255, 61, 0.40);
 }
 
 /* ── Card elevation levels ─────────────────────────────────────────────── */
 .shadow-card {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(11, 14, 20, 0.06), 0 1px 2px rgba(11, 14, 20, 0.04);
 }
 .shadow-card-md {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(11, 14, 20, 0.08), 0 1px 3px rgba(11, 14, 20, 0.06);
 }
 .shadow-card-lg {
-  box-shadow: 0 8px 28px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 8px 28px rgba(11, 14, 20, 0.10), 0 2px 6px rgba(11, 14, 20, 0.06);
 }
 
-/* ── Focus ring ────────────────────────────────────────────────────────── */
+/* ── Focus ring — Cobalt for accessible, calm focus state ──────────────── */
 .focus-ring {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 .focus-ring:focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  outline: 2px solid var(--color-cobalt-500);
   outline-offset: 2px;
 }
 
@@ -124,14 +168,15 @@ body {
 
 /* ── Gradient text ─────────────────────────────────────────────────────── */
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.75) 100%);
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.75) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+/* Brand gradient text on dark backgrounds — Volt → Volt-dark. */
 .text-gradient-brand {
-  background: linear-gradient(135deg, var(--color-brand-400) 0%, var(--color-brand-600) 100%);
+  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-700) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

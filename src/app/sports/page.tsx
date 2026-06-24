@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Trophy } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SportIcon } from "@/components/sport/sport-icon";
 import { prisma } from "@/lib/prisma";
 import { tSportName, tSportCategory } from "@/lib/sports";
 
@@ -53,8 +53,8 @@ export default async function SportsCatalogPage() {
                     <Card className="h-full transition-all duration-150 group-hover:-translate-y-0.5 group-hover:shadow-card-md">
                       <CardContent className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="grid h-10 w-10 place-items-center rounded-[var(--radius-md)] bg-brand-50 text-brand-600">
-                            <Trophy className="h-5 w-5" />
+                          <div className="grid h-10 w-10 place-items-center rounded-[var(--radius-md)] bg-brand-50 text-foreground">
+                            <SportIcon slug={sport.slug} className="h-5 w-5" />
                           </div>
                           <div>
                             <p className="font-semibold transition-colors group-hover:text-brand-700">

@@ -100,10 +100,10 @@ export function ReschedulePanel({
                 "rounded-[var(--radius-md)] border px-2 py-2.5 text-sm font-medium transition-all duration-150",
                 canSelect
                   ? isSelected
-                    ? "border-brand-500 bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_2px_10px_rgba(21,163,71,0.35)]"
+                    ? "border-brand-600 bg-gradient-to-b from-brand-500 to-brand-600 text-foreground shadow-[0_2px_10px_rgba(196,255,61,0.55)]"
                     : inRange
-                    ? "border-brand-400 bg-brand-100 text-brand-700"
-                    : "border-border bg-surface hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+                    ? "border-brand-400 bg-brand-100 text-foreground"
+                    : "border-border bg-surface hover:border-brand-400 hover:bg-brand-50 hover:text-foreground"
                   : "cursor-not-allowed border-border bg-background text-muted line-through opacity-40",
               ].join(" ")}
             >
@@ -121,7 +121,7 @@ export function ReschedulePanel({
 
       {/* Confirm card */}
       {newStartISO && newEndISO && (
-        <div className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(21,163,71,0.13)]">
+        <div className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]">
           {isSameSlot ? (
             <p className="px-4 py-4 text-sm text-muted">{t("sameSlot")}</p>
           ) : (
@@ -139,7 +139,7 @@ export function ReschedulePanel({
                       {durationLabel(originalDurationMs)} · {t("payAtClub")}
                     </p>
                   </div>
-                  <p className="text-xl font-bold text-brand-600">{formatGEL(totalPrice)}</p>
+                  <p className="text-xl font-bold text-foreground">{formatGEL(totalPrice)}</p>
                 </div>
               </div>
               <div className="px-4 pb-4 pt-3">

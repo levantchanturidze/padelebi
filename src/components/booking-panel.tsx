@@ -95,9 +95,9 @@ export function BookingPanel({
                 slot.available
                   ? inRange
                     ? isStart
-                      ? "border-brand-500 bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-[0_2px_10px_rgba(21,163,71,0.35)]"
-                      : "border-brand-400 bg-brand-100 text-brand-700"
-                    : "border-border bg-surface hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+                      ? "border-brand-600 bg-gradient-to-b from-brand-500 to-brand-600 text-foreground shadow-[0_2px_10px_rgba(196,255,61,0.55)]"
+                      : "border-brand-400 bg-brand-100 text-foreground"
+                    : "border-border bg-surface hover:border-brand-400 hover:bg-brand-50 hover:text-foreground"
                   : "cursor-not-allowed border-border bg-background text-muted line-through opacity-50",
               ].join(" ")}
             >
@@ -119,8 +119,8 @@ export function BookingPanel({
               className={[
                 "rounded-full border px-3 py-1 text-xs font-semibold transition-all duration-150",
                 numSlots === n
-                  ? "border-brand-500 bg-brand-500 text-white shadow-[0_2px_8px_rgba(21,163,71,0.3)]"
-                  : "border-border bg-surface text-muted hover:border-brand-400 hover:text-brand-700",
+                  ? "border-brand-600 bg-brand-500 text-foreground shadow-[0_2px_8px_rgba(196,255,61,0.5)]"
+                  : "border-border bg-surface text-muted hover:border-brand-400 hover:text-foreground",
               ].join(" ")}
             >
               {durationLabel(slotMs, n)}
@@ -139,7 +139,7 @@ export function BookingPanel({
       {startSlot && endSlot && (
         <form
           action={action}
-          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(21,163,71,0.13)]"
+          className="mt-4 overflow-hidden rounded-[var(--radius-lg)] border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-brand-50/40 shadow-[0_4px_24px_rgba(196,255,61,0.25)]"
         >
           <input type="hidden" name="facilityId" value={facilityId} />
           <input type="hidden" name="slug" value={slug} />
@@ -157,7 +157,7 @@ export function BookingPanel({
                   {durationLabel(slotMs, numSlots)} · {t("payAtClub")}
                 </p>
               </div>
-              <p className="text-xl font-bold text-brand-600">{formatGEL(totalPrice)}</p>
+              <p className="text-xl font-bold text-foreground">{formatGEL(totalPrice)}</p>
             </div>
 
             {/* Notes textarea */}
