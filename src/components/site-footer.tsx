@@ -4,7 +4,10 @@ import { Logo } from "./logo";
 import { Container } from "./ui/container";
 
 export async function SiteFooter() {
-  const t = await getTranslations("footer");
+  const [t, tLegal] = await Promise.all([
+    getTranslations("footer"),
+    getTranslations("legal"),
+  ]);
   return (
     <footer className="mt-16 border-t border-border bg-surface">
       <Container className="py-8">
@@ -22,6 +25,12 @@ export async function SiteFooter() {
             </Link>
             <Link href="/login" className="transition-colors duration-150 hover:text-foreground">
               {t("signIn")}
+            </Link>
+            <Link href="/terms" className="transition-colors duration-150 hover:text-foreground">
+              {tLegal("terms.title")}
+            </Link>
+            <Link href="/privacy" className="transition-colors duration-150 hover:text-foreground">
+              {tLegal("privacy.title")}
             </Link>
           </nav>
         </div>

@@ -125,6 +125,140 @@
     "dark": "Dark theme",
     "system": "System theme"
   },
+  "consent": {
+    "title": "We use cookies",
+    "body": "Playtora uses cookies to keep you signed in, remember your theme and language, and record your consent. We don't use tracking or advertising cookies.",
+    "acceptAll": "Accept all",
+    "necessaryOnly": "Necessary only",
+    "learnMore": "Read the Privacy Policy",
+    "close": "Close"
+  },
+  "legal": {
+    "label": "Legal",
+    "lastUpdated": "Last updated: 10 July 2026",
+    "readPrivacy": "Read the Privacy Policy",
+    "readTerms": "Read the Terms of Service",
+    "terms": {
+      "title": "Terms of Service",
+      "intro": "These Terms of Service (the \"Terms\") govern your use of the Playtora platform, operated from Tbilisi, Georgia. By creating an account, listing a venue, or booking a facility, you agree to be bound by these Terms. Please read them carefully.",
+      "sections": {
+        "acceptance": {
+          "title": "1. Acceptance of Terms",
+          "body": "By accessing or using Playtora (the \"Service\"), you confirm that you are at least 18 years old and agree to these Terms and our Privacy Policy. If you do not agree, do not use the Service."
+        },
+        "service": {
+          "title": "2. Description of Service",
+          "body": "Playtora is a marketplace that connects players with sports venues. We list availability, take bookings, and communicate confirmations. We are not the operator of any listed venue; venues are independent businesses responsible for their own facilities, staff and safety."
+        },
+        "accounts": {
+          "title": "3. Accounts and Security",
+          "body": "You are responsible for the accuracy of the information you provide, for the security of your password, and for all activity on your account. Notify us immediately if you suspect unauthorised access. We may suspend or terminate accounts that violate these Terms."
+        },
+        "bookings": {
+          "title": "4. Bookings",
+          "body": "A booking confirmed through Playtora is a contract between you and the venue. Currently payment is due at the venue at the time of play unless the venue states otherwise. You must arrive on time and follow the venue's rules. Prices, availability and rules are set by the venue and may change."
+        },
+        "cancellation": {
+          "title": "5. Cancellation and Rescheduling",
+          "body": "Players may cancel or reschedule a booking at least 2 hours before the start time free of charge. Cancellations within 2 hours may be treated as a no-show at the venue's discretion. Venue managers may cancel a booking if the facility becomes unavailable and will notify you by email."
+        },
+        "venueManagers": {
+          "title": "6. Venue Managers",
+          "body": "If you list a venue, you warrant that you are authorised to do so and that all information you publish is accurate. You are responsible for honouring confirmed bookings, keeping availability up to date, and complying with local laws (including health, safety and consumer protection)."
+        },
+        "prohibited": {
+          "title": "7. Prohibited Use",
+          "body": "You must not use Playtora to defraud users, scrape or resell data, misrepresent a venue, upload harmful content, or attempt to disrupt the Service. We may remove content or suspend accounts that violate these rules without prior notice."
+        },
+        "content": {
+          "title": "8. User Content",
+          "body": "You retain ownership of the reviews, photos and other content you submit, but you grant Playtora a non-exclusive, worldwide, royalty-free licence to display, translate and share your content on the Service. We may moderate or remove content that violates these Terms or applicable law."
+        },
+        "thirdParties": {
+          "title": "9. Third-Party Services",
+          "body": "We use trusted third parties to operate the Service (for example, Vercel for hosting, Neon for the database, Resend for email, OpenStreetMap for map tiles). Their terms and privacy notices apply to the parts of the Service they power."
+        },
+        "disclaimer": {
+          "title": "10. Disclaimers",
+          "body": "The Service is provided \"as is\" without warranties of any kind. We do not warrant that the Service will be uninterrupted, error-free, or that a venue's facilities meet your expectations. Use of the Service is at your own risk."
+        },
+        "liability": {
+          "title": "11. Limitation of Liability",
+          "body": "To the fullest extent permitted by law, Playtora and its affiliates will not be liable for indirect, incidental, special or consequential damages, or for lost profits, revenue, data or goodwill arising from your use of the Service. Our total liability for direct damages will not exceed the fees you have paid to Playtora in the twelve months before the claim."
+        },
+        "termination": {
+          "title": "12. Termination",
+          "body": "You may close your account at any time. We may suspend or terminate your access if you violate these Terms, if required by law, or if we discontinue the Service. Provisions that by their nature should survive termination will remain in effect."
+        },
+        "governingLaw": {
+          "title": "13. Governing Law and Disputes",
+          "body": "These Terms are governed by the laws of Georgia. Any dispute will be resolved by the competent courts of Tbilisi, Georgia, unless mandatory consumer-protection rules of your country of residence require otherwise."
+        },
+        "changes": {
+          "title": "14. Changes to These Terms",
+          "body": "We may update these Terms from time to time. We will post the updated version on this page and adjust the \"Last updated\" date. Material changes will be highlighted by email or in-app notice where reasonable. Your continued use of the Service after the update constitutes acceptance."
+        },
+        "contact": {
+          "title": "15. Contact",
+          "body": "Questions about these Terms? Email hello@playtora.app."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "This Privacy Policy explains what personal data Playtora collects, how we use it, and the rights you have over it. We follow GDPR-aligned principles regardless of where you use the Service from.",
+      "sections": {
+        "introduction": {
+          "title": "1. Who We Are",
+          "body": "Playtora is a sports venue marketplace operated from Tbilisi, Georgia. For the purposes of applicable data protection law, Playtora is the data controller for the personal data described below."
+        },
+        "dataCollected": {
+          "title": "2. Data We Collect",
+          "body": "Account: name, email, password (hashed), phone number, preferred language, skill level (optional).\nBookings: the facility, date, time, price and status of each booking you make.\nContent: reviews and photos you post; favourites you save.\nLocation: only when you tap \"Use my location\" — we read the browser's geolocation to sort venues by distance. The coordinate is stored in your browser (not on our servers) with a 30-minute expiry.\nDevice and log data: IP address, browser type and pages visited, kept in short-lived server logs for security and debugging.\nCookies: an authentication session cookie, a theme preference cookie, a language cookie, and a consent record cookie."
+        },
+        "howWeUse": {
+          "title": "3. How We Use Your Data",
+          "body": "To create your account and authenticate you; to accept and communicate about bookings; to send transactional email (confirmation, reminder, cancellation, password reset) in your preferred language; to improve the Service and prevent abuse; to comply with legal obligations."
+        },
+        "sharing": {
+          "title": "4. Who We Share With",
+          "body": "Venue managers see the bookings placed at their facilities (your name, email, phone and any notes you added).\nResend delivers our transactional emails.\nVercel hosts the application; Neon hosts the database.\nWe never sell your personal data. We may disclose data if legally required (for example, a court order)."
+        },
+        "cookies": {
+          "title": "5. Cookies",
+          "body": "We use only strictly necessary and preference cookies today:\n• Authentication session — keeps you signed in.\n• Theme — remembers light / dark / system.\n• Language — remembers ka or en.\n• Consent — records your choice from the banner.\nWe do not use analytics, advertising, or cross-site tracking cookies. If that ever changes, we will update this policy and the consent banner."
+        },
+        "international": {
+          "title": "6. International Data Transfers",
+          "body": "Our infrastructure providers (Vercel, Neon, Resend) may process data outside Georgia, including in the United States and the European Union. Where required, we rely on Standard Contractual Clauses or equivalent safeguards approved by regulators."
+        },
+        "retention": {
+          "title": "7. How Long We Keep It",
+          "body": "Account data: while your account is active, then deleted within 30 days of your closure request.\nBookings and financial records: up to 5 years to comply with tax and accounting rules.\nSecurity logs: up to 90 days.\nMarketing preferences and consent records: as long as we may need to prove compliance."
+        },
+        "rights": {
+          "title": "8. Your Rights",
+          "body": "Subject to applicable law you have the right to access, correct, delete, restrict or object to the processing of your personal data, and to receive a portable copy. To exercise any of these rights, email privacy@playtora.app. You also have the right to complain to a supervisory authority in your country of residence."
+        },
+        "security": {
+          "title": "9. Security",
+          "body": "We protect data in transit with TLS, hash passwords with bcrypt, restrict administrator access, and monitor for unauthorised access. No system is perfectly secure — please use a strong unique password and notify us at once if you suspect your account has been compromised."
+        },
+        "children": {
+          "title": "10. Children",
+          "body": "The Service is intended for people aged 18 and over. If we learn that we have collected personal data from a child under 18 without parental consent, we will delete it."
+        },
+        "changes": {
+          "title": "11. Changes to This Policy",
+          "body": "We may update this Privacy Policy from time to time. The updated version will be posted here with the \"Last updated\" date at the top. If we make material changes we will inform registered users by email."
+        },
+        "contact": {
+          "title": "12. Contact",
+          "body": "For any privacy-related question or request, email privacy@playtora.app."
+        }
+      }
+    }
+  },
   "geo": {
     "useMyLocation": "Use my location",
     "finding": "Finding you…",

@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { ThemeScript } from "@/components/theme/theme-script";
+import { CookieBanner } from "@/components/consent/cookie-banner";
 import { getCurrentUser } from "@/lib/session";
 import { SITE_URL, SITE_NAME, TWITTER_HANDLE, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import {
@@ -15,6 +16,7 @@ import {
   isThemePref,
   resolveThemeForServer,
 } from "@/lib/theme";
+import { CONSENT_COOKIE, isConsentPref } from "@/lib/consent";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -60,6 +62,11 @@ export default async function RootLayout({
     isThemePref(themeCookie) ? themeCookie : undefined,
   );
 
+  // Show the consent banner only if the user hasn't recorded a choice yet.
+  // Prevents flash-of-banner after acceptance.
+  const consentCookie = cookieStore.get(CONSENT_COOKIE)?.value;
+  const needsConsent = !isConsentPref(consentCookie);
+
   return (
     <html
       lang={locale}
@@ -83,6 +90,7 @@ export default async function RootLayout({
             <main className="min-w-0 flex-1">{children}</main>
           </div>
           <SiteFooter />
+          {needsConsent && <CookieBanner />}
         </NextIntlClientProvider>
       </body>
     </html>

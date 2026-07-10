@@ -32,6 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/sports"), lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: absoluteUrl("/register"), lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: absoluteUrl("/login"), lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: absoluteUrl("/terms"), lastModified: now, changeFrequency: "monthly", priority: 0.2 },
+    { url: absoluteUrl("/privacy"), lastModified: now, changeFrequency: "monthly", priority: 0.2 },
   ];
 
   const sportRoutes: MetadataRoute.Sitemap = sports.map((s) => ({
