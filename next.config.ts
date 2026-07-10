@@ -12,10 +12,26 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    // Phase 1 rename: preserve old URLs from when the app was Padelebi (padel-only).
-    // Query strings are preserved automatically by Next.
     return [
-      // Public listing: /clubs → /venues
+      // ── Primary-domain enforcement ──────────────────────────────────
+      // playtora.vercel.app and www.playtora.ge → playtora.ge (301).
+      // Preserves SEO value from the old deployment URL and avoids
+      // duplicate-content penalties from Google.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "playtora.vercel.app" }],
+        destination: "https://playtora.ge/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.playtora.ge" }],
+        destination: "https://playtora.ge/:path*",
+        permanent: true,
+      },
+
+      // ── Phase 1 rename: legacy Padelebi URLs → new sport-neutral ones ─
+      // Query strings are preserved automatically by Next.
       { source: "/clubs", destination: "/venues", permanent: true },
       { source: "/clubs/:slug", destination: "/venues/:slug", permanent: true },
 
