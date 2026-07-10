@@ -51,11 +51,12 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  venues      Venue[]              @relation("VenueOwner")
-  bookings    Booking[]
-  reviews     Review[]
-  favorites   Favorite[]
-  resetTokens PasswordResetToken[]
+  venues          Venue[]              @relation("VenueOwner")
+  bookings        Booking[]
+  reviews         Review[]
+  favorites       Favorite[]
+  resetTokens     PasswordResetToken[]
+  teamMemberships TeamMember[]
 }
 
 model Venue {
@@ -171,6 +172,14 @@ model Booking {
   discountCodeId    String?
   /// Amount taken off the subtotal in GEL. 0 or null when no code was applied.
   discountAmountGEL Int?
+  /// True when the booking is a group / team booking with per-player payment split.
+  isTeam         Boolean  @default(false)
+  /// Total players including the owner; sharePerPlayer = priceGEL / teamSize.
+  /// Null when isTeam is false. Range enforced at the action layer (2-8).
+  teamSize       Int?
+  /// Randomised opaque code powering the /team/join/[code] share link.
+  /// Nullable so non-team bookings don't take up a unique slot.
+  teamShareCode  String?  @unique
   status         String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
   paymentStatus  String   @default("UNPAID") // UNPAID | PAID | REFUNDED
   notes          String?
@@ -182,11 +191,37 @@ model Booking {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   classSession ClassSession? @relation(fields: [classSessionId], references: [id])
   discountCode DiscountCode? @relation(fields: [discountCodeId], references: [id])
+  teamMembers  TeamMember[]
 
   @@index([facilityId, startTime])
   @@index([userId])
   @@index([classSessionId])
   @@index([discountCodeId])
+}
+
+/// A player invited to (or joined) a team booking. The Booking.userId is the
+/// "owner"/organiser and does not appear here — they're always counted as
+/// filling one slot. Only INVITED and JOINED rows count against teamSize.
+model TeamMember {
+  id          String   @id @default(cuid())
+  bookingId   String
+  /// Set when the member is a signed-in user. Null while a pending email
+  /// invite hasn't been accepted, or if the account was later deleted.
+  userId      String?
+  /// Set for email invites; null for share-link joins with an existing account.
+  email       String?
+  /// INVITED | JOINED | DECLINED
+  status      String   @default("INVITED")
+  respondedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([bookingId, userId])
+  @@unique([bookingId, email])
+  @@index([bookingId])
+  @@index([userId])
 }
 
 /// Promotional discount codes redeemable at booking checkout. `usedCount` is

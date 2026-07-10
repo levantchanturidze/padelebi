@@ -5,10 +5,12 @@ import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { Button, LinkButton } from "@/components/ui/button";
+import { TeamPanel } from "@/components/team/team-panel";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { cancelBookingAction } from "@/app/actions/booking";
 import { formatGEL } from "@/lib/utils";
+import { seatCounts, sharePerPlayerGEL, buildTeamJoinUrl } from "@/lib/team";
 
 export default async function BookingDetailPage({
   params,
@@ -24,12 +26,23 @@ export default async function BookingDetailPage({
     include: {
       facility: { include: { venue: true } },
       discountCode: true,
+      user: { select: { name: true, email: true } },
+      teamMembers: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
   if (!booking) notFound();
-  // Only the owner (or future: admins) may view this page
-  if (booking.userId !== user.id) redirect("/account/bookings");
+
+  const isOwner = booking.userId === user.id;
+  const isMember = booking.teamMembers.some(
+    (m) => m.userId === user.id && m.status !== "DECLINED",
+  );
+  // Owners always see the page. Team members with a live seat see it too;
+  // everyone else is bounced back to their own list.
+  if (!isOwner && !isMember) redirect("/account/bookings");
 
   const durationMs = booking.endTime.getTime() - booking.startTime.getTime();
   const durationH = durationMs / 3_600_000;
@@ -37,6 +50,7 @@ export default async function BookingDetailPage({
 
   const now = new Date();
   const cancellable =
+    isOwner &&
     booking.status === "CONFIRMED" &&
     booking.endTime >= now &&
     booking.startTime.getTime() - now.getTime() > 2 * 3_600_000;
@@ -141,6 +155,37 @@ export default async function BookingDetailPage({
             ))}
           </dl>
         </div>
+
+        {/* Team panel (only for team bookings) */}
+        {booking.isTeam && booking.teamSize && booking.teamShareCode && (
+          <div className="mt-6">
+            <TeamPanel
+              bookingId={booking.id}
+              teamSize={booking.teamSize}
+              seats={seatCounts(booking.teamSize, booking.teamMembers)}
+              share={{
+                url: buildTeamJoinUrl(booking.teamShareCode),
+                code: booking.teamShareCode,
+              }}
+              perPlayerGEL={sharePerPlayerGEL(booking.priceGEL, booking.teamSize)}
+              owner={{
+                id: booking.userId,
+                name: booking.user.name,
+                email: booking.user.email,
+                isSelf: isOwner,
+              }}
+              members={booking.teamMembers.map((m) => ({
+                id: m.id,
+                name: m.user?.name ?? null,
+                email: m.user?.email ?? m.email,
+                status: m.status as "INVITED" | "JOINED" | "DECLINED",
+                isSelf: m.userId === user.id,
+              }))}
+              viewerCanInvite={isOwner && !isCancelled && isUpcoming}
+              viewerCanRemove={isOwner && !isCancelled && isUpcoming}
+            />
+          </div>
+        )}
 
         {/* Actions */}
         <div className="mt-6 flex flex-col gap-3">

@@ -1,11 +1,13 @@
 import { prisma } from "./prisma";
 import type { SessionUser } from "./session";
 import { applyDiscountCode } from "./discount-codes";
+import { generateShareCode, MIN_TEAM_SIZE, MAX_TEAM_SIZE } from "./team";
 import {
   notifyBookingConfirmed,
   notifyBookingCancelled,
   notifyManagerNewBooking,
   notifyManagerBookingCancelled,
+  notifyTeamCancelled,
 } from "./notify";
 
 export class BookingError extends Error {}
@@ -31,6 +33,8 @@ type CreateBookingInput = {
   endTime: Date;
   notes?: string;
   discountCode?: string;
+  /** Turn this into a team booking with N total players including owner. */
+  teamSize?: number;
 };
 
 type CreateClassBookingInput = {
@@ -54,10 +58,15 @@ type CreateDropInInput = {
  * immediately before insert to guarantee no double-booking under concurrency.
  */
 export async function createBooking(input: CreateBookingInput) {
-  const { facilityId, userId, startTime, endTime, notes, discountCode } = input;
+  const { facilityId, userId, startTime, endTime, notes, discountCode, teamSize } = input;
 
   if (endTime <= startTime) throw new BookingError("Invalid time range.");
   if (startTime < new Date()) throw new BookingError("Cannot book a slot in the past.");
+
+  const isTeam = typeof teamSize === "number" && teamSize > 1;
+  if (isTeam && (teamSize! < MIN_TEAM_SIZE || teamSize! > MAX_TEAM_SIZE)) {
+    throw new BookingError(`Team size must be between ${MIN_TEAM_SIZE} and ${MAX_TEAM_SIZE}.`);
+  }
 
   return prisma.$transaction(async (tx) => {
     const facility = await tx.facility.findUnique({
@@ -118,6 +127,9 @@ export async function createBooking(input: CreateBookingInput) {
         priceGEL,
         discountCodeId,
         discountAmountGEL,
+        isTeam,
+        teamSize: isTeam ? teamSize! : null,
+        teamShareCode: isTeam ? generateShareCode() : null,
         status: "CONFIRMED",
         paymentStatus: "UNPAID", // Phase 1: pay at venue
         notes: notes || null,
@@ -325,6 +337,7 @@ export async function cancelBooking(bookingId: string, actor: SessionUser) {
 
   void notifyBookingCancelled(updated.id);
   void notifyManagerBookingCancelled(updated.id);
+  if (booking.isTeam) void notifyTeamCancelled(updated.id);
 
   return updated;
 }

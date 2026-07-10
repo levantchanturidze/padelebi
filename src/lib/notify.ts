@@ -10,12 +10,14 @@ import { format } from "date-fns";
 import { prisma } from "./prisma";
 import { sendEmail, normalizeLocale } from "./email";
 import { absoluteUrl } from "./seo";
+import { buildTeamJoinUrl } from "./team";
 import { BookingConfirmedEmail } from "@/emails/booking-confirmed";
 import { BookingReminderEmail } from "@/emails/booking-reminder";
 import { BookingCancelledEmail } from "@/emails/booking-cancelled";
 import { PasswordResetEmail } from "@/emails/password-reset";
 import { ManagerNewBookingEmail } from "@/emails/manager-new-booking";
 import { ManagerBookingCancelledEmail } from "@/emails/manager-booking-cancelled";
+import { TeamInviteEmail } from "@/emails/team-invite";
 
 function whenLabel(start: Date, end: Date): string {
   return `${format(start, "EEE, d MMM · HH:mm")}–${format(end, "HH:mm")}`;
@@ -49,6 +51,10 @@ const SUBJECTS = {
   managerCancelled: {
     en: (venue: string) => `Booking cancelled at ${venue}`,
     ka: (venue: string) => `${venue} — ჯავშანი გაუქმდა`,
+  },
+  teamInvite: {
+    en: (owner: string) => `${owner} invited you to a game`,
+    ka: (owner: string) => `${owner}-მა თამაშზე მოგიწვია`,
   },
 } as const;
 
@@ -234,6 +240,89 @@ export async function notifyManagerBookingCancelled(bookingId: string): Promise<
     });
   } catch (err) {
     console.error("notifyManagerBookingCancelled failed:", err);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Team invite — sent when a booking owner invites a player by email.
+// Uses the invitee's account locale if we know them, else falls back to
+// the owner's locale so at least the tone matches the sender.
+// ────────────────────────────────────────────────────────────────────────
+export async function notifyTeamInvite(args: {
+  email: string;
+  ownerName: string;
+  facilityName: string;
+  whenStart: Date;
+  whenEnd: Date;
+  shareCode: string;
+}): Promise<void> {
+  try {
+    const invitee = await prisma.user.findUnique({
+      where: { email: args.email },
+      select: { locale: true, name: true },
+    });
+    const locale = normalizeLocale(invitee?.locale ?? null);
+    const joinUrl = buildTeamJoinUrl(args.shareCode);
+
+    await sendEmail({
+      to: args.email,
+      subject: SUBJECTS.teamInvite[locale](args.ownerName),
+      tag: "team-invite",
+      react: TeamInviteEmail({
+        locale,
+        inviteeName: invitee?.name ?? null,
+        ownerName: args.ownerName,
+        facilityName: args.facilityName,
+        whenLabel: whenLabel(args.whenStart, args.whenEnd),
+        joinUrl,
+      }),
+    });
+  } catch (err) {
+    console.error("notifyTeamInvite failed:", err);
+  }
+}
+
+/**
+ * Broadcast a cancellation to every team member with an email on file.
+ * Reuses the standard cancellation template. The organiser gets their own
+ * notification via notifyBookingCancelled; this only covers the invitees.
+ */
+export async function notifyTeamCancelled(bookingId: string): Promise<void> {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        facility: { include: { venue: true } },
+        teamMembers: { include: { user: true } },
+      },
+    });
+    if (!booking) return;
+
+    const targets = booking.teamMembers
+      .filter((m) => m.status !== "DECLINED")
+      .map((m) => ({
+        email: m.user?.email ?? m.email,
+        locale: normalizeLocale(m.user?.locale ?? null),
+      }))
+      .filter((t): t is { email: string; locale: "en" | "ka" } => !!t.email);
+
+    await Promise.allSettled(
+      targets.map((t) =>
+        sendEmail({
+          to: t.email,
+          subject: SUBJECTS.cancelled[t.locale](),
+          tag: "team-booking-cancelled",
+          react: BookingCancelledEmail({
+            locale: t.locale,
+            venueName: booking.facility.venue.name,
+            whenLabel: whenLabel(booking.startTime, booking.endTime),
+            venuesUrl: absoluteUrl("/venues"),
+          }),
+        }),
+      ),
+    );
+  } catch (err) {
+    console.error("notifyTeamCancelled failed:", err);
   }
 }
 

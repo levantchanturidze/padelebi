@@ -35,9 +35,12 @@ export function BookingPanel({
   isAuthenticated: boolean;
 }) {
   const t = useTranslations("booking");
+  const tTeam = useTranslations("team");
   const [state, action, pending] = useActionState<BookingActionState, FormData>(createBookingAction, undefined);
   const [startIdx, setStartIdx] = useState<number | null>(null);
   const [numSlots, setNumSlots] = useState(1);
+  const [isTeam, setIsTeam] = useState(false);
+  const [teamSize, setTeamSize] = useState(4);
 
   const slotMs = slots.length > 0
     ? new Date(slots[0].end).getTime() - new Date(slots[0].start).getTime()
@@ -168,6 +171,49 @@ export function BookingPanel({
               placeholder={t("notesPlaceholder")}
               className="mt-3 w-full resize-none rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
+
+            {/* Team booking toggle */}
+            {isAuthenticated && (
+              <div className="mt-3 rounded-[var(--radius-md)] border border-border bg-surface/60 px-3 py-2.5">
+                <label className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-foreground">{tTeam("bookAsTeam")}</span>
+                  <input
+                    type="checkbox"
+                    checked={isTeam}
+                    onChange={(e) => setIsTeam(e.target.checked)}
+                    className="h-4 w-4 rounded border-border text-brand-600 focus:ring-brand-400"
+                  />
+                </label>
+                {isTeam && (
+                  <>
+                    <input type="hidden" name="teamSize" value={teamSize} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted">{tTeam("players")}:</span>
+                      {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setTeamSize(n)}
+                          className={[
+                            "rounded-full border px-3 py-1 text-xs font-semibold transition-all",
+                            teamSize === n
+                              ? "border-brand-600 bg-brand-500 text-foreground shadow-[0_2px_8px_rgba(196,255,61,0.5)]"
+                              : "border-border bg-surface text-muted hover:border-brand-400 hover:text-foreground",
+                          ].join(" ")}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-muted">
+                      {tTeam("perPlayerAmount", {
+                        amount: formatGEL(Math.ceil(totalPrice / teamSize)),
+                      })}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
 
             {isAuthenticated && <DiscountCodeField subtotalGEL={totalPrice} />}
           </div>

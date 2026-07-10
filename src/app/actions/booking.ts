@@ -39,9 +39,18 @@ export async function createBookingAction(
   const discountCodeRaw = formData.get("discountCode");
   const discountCode = discountCodeRaw ? String(discountCodeRaw).trim() || undefined : undefined;
 
+  // Team booking is opt-in via a hidden field that the client only submits
+  // when the toggle is active. Values outside [2,8] fall through to non-team.
+  let teamSize: number | undefined;
+  const teamSizeRaw = formData.get("teamSize");
+  if (teamSizeRaw) {
+    const n = Number(teamSizeRaw);
+    if (Number.isInteger(n) && n >= 2 && n <= 8) teamSize = n;
+  }
+
   let bookingId: string;
   try {
-    const booking = await createBooking({ facilityId, userId: user.id, startTime, endTime, notes, discountCode });
+    const booking = await createBooking({ facilityId, userId: user.id, startTime, endTime, notes, discountCode, teamSize });
     bookingId = booking.id;
   } catch (err) {
     if (err instanceof BookingError) return { error: err.message };
