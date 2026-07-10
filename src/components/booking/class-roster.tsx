@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useTranslations } from "next-intl";
 import { createClassBookingAction, type BookingActionState } from "@/app/actions/booking";
 import { Button } from "@/components/ui/button";
+import { DiscountCodeField } from "@/components/booking/discount-code-field";
 import { formatGEL } from "@/lib/utils";
 
 export type ClientClassSession = {
@@ -133,6 +134,7 @@ export function ClassRoster({
                       {pending ? t("joining") : isAuthenticated ? t("joinClass") : t("signInToJoin")}
                     </Button>
                   </div>
+                  {isAuthenticated && <DiscountCodeField subtotalGEL={s.priceGEL * attendees} />}
                 </form>
               )}
             </li>

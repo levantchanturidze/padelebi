@@ -29,6 +29,7 @@ export default async function AdminBookingsPage({
   const venueIdParam = sp.venueId ?? sp.clubId; // accept legacy clubId
   await requireRole(["PLATFORM_ADMIN"], "/admin/bookings");
   const t = await getTranslations("admin");
+  const tRoot = await getTranslations();
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
@@ -36,6 +37,7 @@ export default async function AdminBookingsPage({
     { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
+    { href: "/admin/discount-codes", label: tRoot("adminDiscount.tab") },
   ];
 
   const allVenues = await prisma.venue.findMany({

@@ -34,6 +34,7 @@ export default async function AdminVenuesPage({
   await requireRole(["PLATFORM_ADMIN"], "/admin/venues");
   const { search = "", status = "all" } = await searchParams;
   const t = await getTranslations("admin");
+  const tRoot = await getTranslations();
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
@@ -41,6 +42,7 @@ export default async function AdminVenuesPage({
     { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
+    { href: "/admin/discount-codes", label: tRoot("adminDiscount.tab") },
   ];
 
   const activeStatus = status !== "all" && VENUE_STATUSES.includes(status as never) ? status : undefined;

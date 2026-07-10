@@ -62,12 +62,17 @@ export async function notifyBookingConfirmed(bookingId: string): Promise<void> {
       include: {
         user: true,
         facility: { include: { venue: true } },
+        discountCode: true,
       },
     });
     if (!booking?.user.email) return;
 
     const locale = normalizeLocale(booking.user.locale);
     const bookingUrl = absoluteUrl(`/account/bookings/${booking.id}`);
+    const discountLabel =
+      booking.discountAmountGEL && booking.discountAmountGEL > 0
+        ? `${booking.discountCode?.code ?? "—"} · −${formatGEL(booking.discountAmountGEL)}`
+        : null;
 
     await sendEmail({
       to: booking.user.email,
@@ -80,6 +85,7 @@ export async function notifyBookingConfirmed(bookingId: string): Promise<void> {
         facilityName: booking.facility.name,
         whenLabel: whenLabel(booking.startTime, booking.endTime),
         totalLabel: formatGEL(booking.priceGEL),
+        discountLabel,
         bookingUrl,
       }),
     });

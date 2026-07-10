@@ -165,7 +165,12 @@ model Booking {
   attendees      Int      @default(1)
   startTime      DateTime
   endTime        DateTime
+  /// Final price paid (already discounted). Original = priceGEL + discountAmountGEL.
   priceGEL       Int
+  /// Redeemed code, if any. Snapshotted so historical bookings survive code deletion.
+  discountCodeId    String?
+  /// Amount taken off the subtotal in GEL. 0 or null when no code was applied.
+  discountAmountGEL Int?
   status         String   @default("CONFIRMED") // PENDING | CONFIRMED | CANCELLED
   paymentStatus  String   @default("UNPAID") // UNPAID | PAID | REFUNDED
   notes          String?
@@ -176,10 +181,39 @@ model Booking {
   facility     Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   classSession ClassSession? @relation(fields: [classSessionId], references: [id])
+  discountCode DiscountCode? @relation(fields: [discountCodeId], references: [id])
 
   @@index([facilityId, startTime])
   @@index([userId])
   @@index([classSessionId])
+  @@index([discountCodeId])
+}
+
+/// Promotional discount codes redeemable at booking checkout. `usedCount` is
+/// bumped inside the booking transaction, so we can enforce `maxUses` without
+/// a separate redemption table. Per-user caps are enforced by counting live
+/// (non-CANCELLED) bookings that carry the code.
+model DiscountCode {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  /// PERCENT | FIXED
+  type          String
+  /// PERCENT: 1–100 (whole percent). FIXED: GEL taken off the subtotal.
+  value         Int
+  /// Total redemptions permitted across all users. Null = unlimited.
+  maxUses       Int?
+  usedCount     Int      @default(0)
+  /// Max redemptions per user. Default 1. Null = unlimited.
+  perUserMax    Int?     @default(1)
+  /// Minimum booking subtotal (GEL) that qualifies. Null = no floor.
+  minAmountGEL  Int?
+  expiresAt     DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  bookings Booking[]
+
+  @@index([isActive, expiresAt])
 }
 
 // Time ranges blocked from booking (maintenance, private events).

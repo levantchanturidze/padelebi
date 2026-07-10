@@ -36,9 +36,12 @@ export async function createBookingAction(
     return { error: "Invalid time slot." };
   }
 
+  const discountCodeRaw = formData.get("discountCode");
+  const discountCode = discountCodeRaw ? String(discountCodeRaw).trim() || undefined : undefined;
+
   let bookingId: string;
   try {
-    const booking = await createBooking({ facilityId, userId: user.id, startTime, endTime, notes });
+    const booking = await createBooking({ facilityId, userId: user.id, startTime, endTime, notes, discountCode });
     bookingId = booking.id;
   } catch (err) {
     if (err instanceof BookingError) return { error: err.message };
@@ -95,9 +98,12 @@ export async function createClassBookingAction(
     redirect(`/login?callbackUrl=${encodeURIComponent(`/venues/${slug}`)}`);
   }
 
+  const discountCodeRaw = formData.get("discountCode");
+  const discountCode = discountCodeRaw ? String(discountCodeRaw).trim() || undefined : undefined;
+
   let bookingId: string;
   try {
-    const booking = await createClassBooking({ classSessionId, userId: user.id, attendees, notes });
+    const booking = await createClassBooking({ classSessionId, userId: user.id, attendees, notes, discountCode });
     bookingId = booking.id;
   } catch (err) {
     if (err instanceof BookingError) return { error: err.message };
@@ -133,9 +139,12 @@ export async function createDropInAction(
     date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   }
 
+  const discountCodeRaw = formData.get("discountCode");
+  const discountCode = discountCodeRaw ? String(discountCodeRaw).trim() || undefined : undefined;
+
   let bookingId: string;
   try {
-    const booking = await createDropInPass({ facilityId, userId: user.id, date, notes });
+    const booking = await createDropInPass({ facilityId, userId: user.id, date, notes, discountCode });
     bookingId = booking.id;
   } catch (err) {
     if (err instanceof BookingError) return { error: err.message };

@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { SessionUser } from "./session";
+import { applyDiscountCode } from "./discount-codes";
 import {
   notifyBookingConfirmed,
   notifyBookingCancelled,
@@ -9,12 +10,27 @@ import {
 
 export class BookingError extends Error {}
 
+/** Maps the string errors thrown by applyDiscountCode into localisable BookingError messages. */
+function toDiscountBookingError(err: unknown): BookingError {
+  const msg = err instanceof Error ? err.message : String(err);
+  switch (msg) {
+    case "DISCOUNT_NOT_FOUND": return new BookingError("Discount code not found.");
+    case "DISCOUNT_INACTIVE":  return new BookingError("This discount code is no longer active.");
+    case "DISCOUNT_EXPIRED":   return new BookingError("This discount code has expired.");
+    case "DISCOUNT_MIN_AMOUNT": return new BookingError("Booking total is below the code's minimum.");
+    case "DISCOUNT_USER_LIMIT": return new BookingError("You have already used this discount code.");
+    case "DISCOUNT_MAXED_OUT": return new BookingError("This discount code is fully redeemed.");
+    default: return new BookingError("This discount code cannot be applied.");
+  }
+}
+
 type CreateBookingInput = {
   facilityId: string;
   userId: string;
   startTime: Date;
   endTime: Date;
   notes?: string;
+  discountCode?: string;
 };
 
 type CreateClassBookingInput = {
@@ -22,6 +38,7 @@ type CreateClassBookingInput = {
   userId: string;
   attendees: number;
   notes?: string;
+  discountCode?: string;
 };
 
 type CreateDropInInput = {
@@ -29,6 +46,7 @@ type CreateDropInInput = {
   userId: string;
   date: Date; // a calendar day; pass becomes valid for that day
   notes?: string;
+  discountCode?: string;
 };
 
 /**
@@ -36,7 +54,7 @@ type CreateDropInInput = {
  * immediately before insert to guarantee no double-booking under concurrency.
  */
 export async function createBooking(input: CreateBookingInput) {
-  const { facilityId, userId, startTime, endTime, notes } = input;
+  const { facilityId, userId, startTime, endTime, notes, discountCode } = input;
 
   if (endTime <= startTime) throw new BookingError("Invalid time range.");
   if (startTime < new Date()) throw new BookingError("Cannot book a slot in the past.");
@@ -73,7 +91,23 @@ export async function createBooking(input: CreateBookingInput) {
     if (blackout) throw new BookingError("That time is blocked by the venue.");
 
     const durationHours = (endTime.getTime() - startTime.getTime()) / 3_600_000;
-    const priceGEL = Math.round(facility.pricePerHourGEL * durationHours);
+    const subtotalGEL = Math.round(facility.pricePerHourGEL * durationHours);
+
+    // Optionally redeem a discount code. Runs inside the same tx so the
+    // usedCount bump rolls back on any downstream failure.
+    let priceGEL = subtotalGEL;
+    let discountCodeId: string | null = null;
+    let discountAmountGEL: number | null = null;
+    if (discountCode) {
+      try {
+        const applied = await applyDiscountCode(tx, discountCode, userId, subtotalGEL);
+        priceGEL = applied.discountedGEL;
+        discountCodeId = applied.codeId;
+        discountAmountGEL = applied.discountGEL;
+      } catch (err) {
+        throw toDiscountBookingError(err);
+      }
+    }
 
     const booking = await tx.booking.create({
       data: {
@@ -82,6 +116,8 @@ export async function createBooking(input: CreateBookingInput) {
         startTime,
         endTime,
         priceGEL,
+        discountCodeId,
+        discountAmountGEL,
         status: "CONFIRMED",
         paymentStatus: "UNPAID", // Phase 1: pay at venue
         notes: notes || null,
@@ -102,7 +138,7 @@ export async function createBooking(input: CreateBookingInput) {
  * transaction so concurrent bookings can't push the session over its limit.
  */
 export async function createClassBooking(input: CreateClassBookingInput) {
-  const { classSessionId, userId, attendees, notes } = input;
+  const { classSessionId, userId, attendees, notes, discountCode } = input;
   if (attendees < 1 || attendees > 20) throw new BookingError("Invalid number of attendees.");
 
   return prisma.$transaction(async (tx) => {
@@ -128,7 +164,21 @@ export async function createClassBooking(input: CreateClassBookingInput) {
       );
     }
 
-    const priceGEL = session.priceGEL * attendees;
+    const subtotalGEL = session.priceGEL * attendees;
+
+    let priceGEL = subtotalGEL;
+    let discountCodeId: string | null = null;
+    let discountAmountGEL: number | null = null;
+    if (discountCode) {
+      try {
+        const applied = await applyDiscountCode(tx, discountCode, userId, subtotalGEL);
+        priceGEL = applied.discountedGEL;
+        discountCodeId = applied.codeId;
+        discountAmountGEL = applied.discountGEL;
+      } catch (err) {
+        throw toDiscountBookingError(err);
+      }
+    }
 
     const booking = await tx.booking.create({
       data: {
@@ -139,6 +189,8 @@ export async function createClassBooking(input: CreateClassBookingInput) {
         startTime: session.startTime,
         endTime: session.endTime,
         priceGEL,
+        discountCodeId,
+        discountAmountGEL,
         status: "CONFIRMED",
         paymentStatus: "UNPAID",
         notes: notes || null,
@@ -158,7 +210,7 @@ export async function createClassBooking(input: CreateClassBookingInput) {
  * pass rather than throwing.
  */
 export async function createDropInPass(input: CreateDropInInput) {
-  const { facilityId, userId, date, notes } = input;
+  const { facilityId, userId, date, notes, discountCode } = input;
 
   const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
   const dayEnd = new Date(dayStart);
@@ -185,6 +237,22 @@ export async function createDropInPass(input: CreateDropInInput) {
     });
     if (existing) return existing;
 
+    const subtotalGEL = facility.pricePerHourGEL; // day-pass price stored in pricePerHourGEL for now
+
+    let priceGEL = subtotalGEL;
+    let discountCodeId: string | null = null;
+    let discountAmountGEL: number | null = null;
+    if (discountCode) {
+      try {
+        const applied = await applyDiscountCode(tx, discountCode, userId, subtotalGEL);
+        priceGEL = applied.discountedGEL;
+        discountCodeId = applied.codeId;
+        discountAmountGEL = applied.discountGEL;
+      } catch (err) {
+        throw toDiscountBookingError(err);
+      }
+    }
+
     const booking = await tx.booking.create({
       data: {
         facilityId,
@@ -192,7 +260,9 @@ export async function createDropInPass(input: CreateDropInInput) {
         attendees: 1,
         startTime: dayStart,
         endTime: dayEnd,
-        priceGEL: facility.pricePerHourGEL, // day-pass price stored in pricePerHourGEL for now
+        priceGEL,
+        discountCodeId,
+        discountAmountGEL,
         status: "CONFIRMED",
         paymentStatus: "UNPAID",
         notes: notes || null,
@@ -235,9 +305,22 @@ export async function cancelBooking(bookingId: string, actor: SessionUser) {
     }
   }
 
-  const updated = await prisma.booking.update({
-    where: { id: bookingId },
-    data: { status: "CANCELLED" },
+  // Cancelling a booking that consumed a discount code should return that
+  // redemption to the pool — otherwise a limited-run code becomes unusable
+  // after a few cancellations. Done in a tx so the two updates commit together.
+  const updated = await prisma.$transaction(async (tx) => {
+    const b = await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: "CANCELLED" },
+    });
+    if (b.discountCodeId) {
+      // Guard against underflow if a code was manually reset elsewhere.
+      await tx.discountCode.updateMany({
+        where: { id: b.discountCodeId, usedCount: { gt: 0 } },
+        data: { usedCount: { decrement: 1 } },
+      });
+    }
+    return b;
   });
 
   void notifyBookingCancelled(updated.id);

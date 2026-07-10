@@ -65,7 +65,11 @@ export default async function ManagerBookingsPage({
       ...(activeStatus ? { status: activeStatus } : {}),
       ...(Object.keys(startTimeFilter).length ? { startTime: startTimeFilter } : {}),
     },
-    include: { facility: { include: { venue: true } }, user: true },
+    include: {
+      facility: { include: { venue: true } },
+      user: true,
+      discountCode: true,
+    },
     orderBy: { startTime: "desc" },
     take: 300,
   });
@@ -174,6 +178,14 @@ export default async function ManagerBookingsPage({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{formatGEL(b.priceGEL)}</span>
+                        {b.discountAmountGEL && b.discountAmountGEL > 0 && (
+                          <span
+                            className="rounded-full border border-brand-500 bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700"
+                            title={b.discountCode?.code ?? undefined}
+                          >
+                            −{formatGEL(b.discountAmountGEL)}
+                          </span>
+                        )}
                         {b.status !== "CANCELLED" && b.endTime >= now && (
                           <form action={cancelBookingAction}>
                             <input type="hidden" name="bookingId" value={b.id} />
@@ -213,7 +225,17 @@ export default async function ManagerBookingsPage({
                         <td className="py-2.5 pr-4 max-w-[180px] text-muted italic">
                           {b.notes ?? "—"}
                         </td>
-                        <td className="py-2.5 pr-4 whitespace-nowrap">{formatGEL(b.priceGEL)}</td>
+                        <td className="py-2.5 pr-4 whitespace-nowrap">
+                          {formatGEL(b.priceGEL)}
+                          {b.discountAmountGEL && b.discountAmountGEL > 0 && (
+                            <span
+                              className="ml-1.5 rounded-full border border-brand-500 bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700"
+                              title={b.discountCode?.code ?? undefined}
+                            >
+                              −{formatGEL(b.discountAmountGEL)}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2.5 pr-4">
                           <Badge tone={tone[b.status as keyof typeof tone] ?? "neutral"}>
                             {b.status.toLowerCase()}

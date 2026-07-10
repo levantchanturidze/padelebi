@@ -21,6 +21,7 @@ export default async function AdminUsersPage({
   const admin = await requireRole(["PLATFORM_ADMIN"], "/admin/users");
   const { search = "", role = "all" } = await searchParams;
   const t = await getTranslations("admin");
+  const tRoot = await getTranslations();
 
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
@@ -28,6 +29,7 @@ export default async function AdminUsersPage({
     { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
+    { href: "/admin/discount-codes", label: tRoot("adminDiscount.tab") },
   ];
 
   const activeRole = role !== "all" && ROLES.includes(role as never) ? role : undefined;

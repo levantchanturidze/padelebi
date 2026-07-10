@@ -110,3 +110,76 @@ export async function toggleSportActiveAction(formData: FormData) {
   revalidatePath("/sports");
   revalidatePath("/venues");
 }
+
+/* ----------------------------- Discount codes ----------------------------- */
+
+/**
+ * Codes are stored uppercase. `value` is a whole percent (1-100) when
+ * type=PERCENT, otherwise a GEL amount (>= 1). Optional nullable fields are
+ * blanks in the form — we normalise them here rather than in the DB.
+ */
+const discountCodeSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(3)
+    .max(32)
+    .regex(/^[A-Z0-9_-]+$/i, "Only letters, digits, - and _"),
+  type: z.enum(["PERCENT", "FIXED"]),
+  value: z.number().int().min(1),
+  maxUses: z.number().int().min(1).nullable(),
+  perUserMax: z.number().int().min(1).nullable(),
+  minAmountGEL: z.number().int().min(1).nullable(),
+  expiresAt: z.date().nullable(),
+});
+
+function parseOptionalInt(raw: FormDataEntryValue | null): number | null {
+  if (raw === null || String(raw).trim() === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.floor(n) : null;
+}
+
+function parseOptionalDate(raw: FormDataEntryValue | null): Date | null {
+  if (raw === null || String(raw).trim() === "") return null;
+  const d = new Date(String(raw));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export async function createDiscountCodeAction(formData: FormData) {
+  await requireRole(["PLATFORM_ADMIN"], "/admin/discount-codes");
+
+  const parsed = discountCodeSchema.parse({
+    code: String(formData.get("code") ?? "").toUpperCase(),
+    type: String(formData.get("type") ?? "PERCENT"),
+    value: Math.floor(Number(formData.get("value") ?? 0)),
+    maxUses: parseOptionalInt(formData.get("maxUses")),
+    perUserMax: parseOptionalInt(formData.get("perUserMax")),
+    minAmountGEL: parseOptionalInt(formData.get("minAmountGEL")),
+    expiresAt: parseOptionalDate(formData.get("expiresAt")),
+  });
+
+  // PERCENT is bounded to 100. FIXED has no upper bound.
+  if (parsed.type === "PERCENT" && parsed.value > 100) {
+    throw new Error("PERCENT codes are capped at 100%.");
+  }
+
+  await prisma.discountCode.create({ data: parsed });
+  revalidatePath("/admin/discount-codes");
+}
+
+export async function toggleDiscountCodeActiveAction(formData: FormData) {
+  await requireRole(["PLATFORM_ADMIN"], "/admin/discount-codes");
+  const id = String(formData.get("codeId") ?? "");
+  const isActive = formData.get("isActive") === "true";
+  await prisma.discountCode.update({ where: { id }, data: { isActive } });
+  revalidatePath("/admin/discount-codes");
+}
+
+export async function deleteDiscountCodeAction(formData: FormData) {
+  await requireRole(["PLATFORM_ADMIN"], "/admin/discount-codes");
+  const id = String(formData.get("codeId") ?? "");
+  // Booking.discountCodeId is ON DELETE SET NULL, so historical bookings
+  // just lose the FK — the snapshotted discountAmountGEL stays.
+  await prisma.discountCode.delete({ where: { id } });
+  revalidatePath("/admin/discount-codes");
+}

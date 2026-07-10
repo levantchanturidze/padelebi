@@ -75,12 +75,14 @@ export default async function AdminOverviewPage() {
   await requireRole(["PLATFORM_ADMIN"], "/admin");
   const t = await getTranslations("admin");
 
+  const tRoot = await getTranslations();
   const ADMIN_NAV = [
     { href: "/admin", label: t("overview") },
     { href: "/admin/venues", label: t("clubs") },
     { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
+    { href: "/admin/discount-codes", label: tRoot("adminDiscount.tab") },
   ];
 
   const weekStart = new Date();

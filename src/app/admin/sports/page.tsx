@@ -46,6 +46,7 @@ export default async function AdminSportsPage() {
     { href: "/admin/sports", label: t("sportsTab") },
     { href: "/admin/users", label: t("users") },
     { href: "/admin/bookings", label: t("bookings") },
+    { href: "/admin/discount-codes", label: tRoot("adminDiscount.tab") },
   ];
 
   const sports = await prisma.sport.findMany({

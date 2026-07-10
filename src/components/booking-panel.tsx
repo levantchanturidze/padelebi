@@ -4,6 +4,7 @@ import { useActionState, useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { createBookingAction, type BookingActionState } from "@/app/actions/booking";
 import { Button } from "@/components/ui/button";
+import { DiscountCodeField } from "@/components/booking/discount-code-field";
 import { formatGEL } from "@/lib/utils";
 
 export type ClientSlot = {
@@ -167,6 +168,8 @@ export function BookingPanel({
               placeholder={t("notesPlaceholder")}
               className="mt-3 w-full resize-none rounded-[var(--radius-md)] border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
+
+            {isAuthenticated && <DiscountCodeField subtotalGEL={totalPrice} />}
           </div>
 
           <div className="px-4 pb-4 pt-3">

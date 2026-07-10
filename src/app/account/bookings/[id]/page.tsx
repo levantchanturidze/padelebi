@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
-import { Check, CalendarDays, Clock, MapPin, CreditCard, FileText } from "lucide-react";
+import { Check, CalendarDays, Clock, MapPin, CreditCard, FileText, BadgePercent } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,10 @@ export default async function BookingDetailPage({
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { facility: { include: { venue: true } } },
+    include: {
+      facility: { include: { venue: true } },
+      discountCode: true,
+    },
   });
 
   if (!booking) notFound();
@@ -73,6 +76,17 @@ export default async function BookingDetailPage({
       value: `${formatGEL(booking.priceGEL)} · ${t("payAtClub")}`,
     },
   ];
+
+  // Snapshot the applied code + amount saved. Show even if the code was
+  // deleted since — discountAmountGEL is stored on the booking.
+  if (booking.discountAmountGEL && booking.discountAmountGEL > 0) {
+    const label = booking.discountCode?.code ?? t("discountApplied");
+    rows.push({
+      icon: <BadgePercent className="h-4 w-4 text-brand-700" />,
+      label: t("discount"),
+      value: `${label} · −${formatGEL(booking.discountAmountGEL)}`,
+    });
+  }
 
   if (booking.notes) {
     rows.push({

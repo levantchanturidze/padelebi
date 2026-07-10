@@ -11,6 +11,7 @@ const STRINGS = {
     facilityLabel: "Facility",
     whenLabel: "When",
     totalLabel: "Total",
+    discountLabel: "Discount",
     payAtVenue: "Pay at venue",
     cta: "View booking",
   },
@@ -22,6 +23,7 @@ const STRINGS = {
     facilityLabel: "ფასილიტი",
     whenLabel: "როდის",
     totalLabel: "სულ",
+    discountLabel: "ფასდაკლება",
     payAtVenue: "გადახდა ადგილზე",
     cta: "ნახე ჯავშანი",
   },
@@ -34,6 +36,7 @@ export function BookingConfirmedEmail({
   facilityName,
   whenLabel,
   totalLabel,
+  discountLabel,
   bookingUrl,
 }: {
   locale?: Locale;
@@ -44,6 +47,8 @@ export function BookingConfirmedEmail({
   whenLabel: string;
   /** Pre-formatted "₾90" */
   totalLabel: string;
+  /** Pre-formatted "LAUNCH25 · −₾10" — omit when no discount was applied. */
+  discountLabel?: string | null;
   bookingUrl: string;
 }) {
   const t = STRINGS[locale];
@@ -60,6 +65,7 @@ export function BookingConfirmedEmail({
         <Row label={t.facilityLabel} value={facilityName} />
         <Row label={t.whenLabel} value={whenLabel} />
         <Row label={t.totalLabel} value={`${totalLabel} · ${t.payAtVenue}`} />
+        {discountLabel && <Row label={t.discountLabel} value={discountLabel} />}
       </Section>
 
       <Section style={{ marginTop: 20 }}>
