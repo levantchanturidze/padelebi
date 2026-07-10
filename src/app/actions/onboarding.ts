@@ -107,5 +107,20 @@ export async function createOnboardingFacilityAction(formData: FormData) {
     },
   });
 
+  redirect("/onboarding/photos");
+}
+
+/**
+ * Marks the current CLUB_ADMIN's onboarding as complete and sends them to
+ * the done screen. Called from both the "Finish" and "Skip" buttons on the
+ * photos step — either way we want the wizard to stop showing up.
+ * Idempotent: repeated calls just overwrite the same timestamp.
+ */
+export async function finishOnboardingAction() {
+  const user = await requireRole([...MANAGER_ROLES], "/onboarding");
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { onboardingCompletedAt: new Date() },
+  });
   redirect("/onboarding/done");
 }

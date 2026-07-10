@@ -48,6 +48,10 @@ model User {
   homeAddress  String?
   homeLat      Float?
   homeLng      Float?
+  /// Timestamp of when the CLUB_ADMIN finished (or skipped) the onboarding
+  /// wizard. Null = wizard should still show the photos step. Non-null =
+  /// user is considered done and won't be routed back into the wizard.
+  onboardingCompletedAt DateTime?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 

@@ -18,7 +18,12 @@ export default async function OnboardingVenuePage() {
     <>
       <OnboardingStepper
         current="venue"
-        labels={{ venue: t("stepVenue"), facility: t("stepFacility"), done: t("stepDone") }}
+        labels={{
+          venue: t("stepVenue"),
+          facility: t("stepFacility"),
+          photos: t("stepPhotos"),
+          done: t("stepDone"),
+        }}
       />
 
       <div className="mb-6 text-center">

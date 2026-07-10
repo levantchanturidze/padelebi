@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-export type StepKey = "venue" | "facility" | "done";
+export type StepKey = "venue" | "facility" | "photos" | "done";
 
 /**
  * Purely-visual progress indicator for the wizard shell. Doesn't render
@@ -11,11 +11,12 @@ export function OnboardingStepper({
   labels,
 }: {
   current: StepKey;
-  labels: { venue: string; facility: string; done: string };
+  labels: { venue: string; facility: string; photos: string; done: string };
 }) {
   const steps: { key: StepKey; label: string }[] = [
     { key: "venue", label: labels.venue },
     { key: "facility", label: labels.facility },
+    { key: "photos", label: labels.photos },
     { key: "done", label: labels.done },
   ];
   const currentIndex = steps.findIndex((s) => s.key === current);
