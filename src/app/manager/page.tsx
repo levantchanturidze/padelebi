@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { Building2, CalendarDays, TrendingUp, Banknote, ArrowRight, Activity, Clock, Trophy } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -61,6 +62,12 @@ export default async function ManagerOverviewPage() {
     include: { facilities: { include: { schedules: true } } },
     orderBy: { createdAt: "desc" },
   });
+
+  // First-time CLUB_ADMIN with no venues → walk them through the wizard.
+  // Platform admins skip this since they might be inspecting an empty state.
+  if (user.role === "CLUB_ADMIN" && venues.length === 0) {
+    redirect("/onboarding");
+  }
   const venueIds = venues.map((c) => c.id);
 
   const now = new Date();

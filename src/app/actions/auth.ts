@@ -61,7 +61,7 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   await signIn("credentials", {
     email: email.toLowerCase(),
     password,
-    redirectTo: role === "CLUB_ADMIN" ? "/club" : "/account/bookings",
+    redirectTo: role === "CLUB_ADMIN" ? "/onboarding" : "/account/bookings",
   });
   return undefined;
 }
