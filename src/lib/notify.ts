@@ -14,6 +14,8 @@ import { BookingConfirmedEmail } from "@/emails/booking-confirmed";
 import { BookingReminderEmail } from "@/emails/booking-reminder";
 import { BookingCancelledEmail } from "@/emails/booking-cancelled";
 import { PasswordResetEmail } from "@/emails/password-reset";
+import { ManagerNewBookingEmail } from "@/emails/manager-new-booking";
+import { ManagerBookingCancelledEmail } from "@/emails/manager-booking-cancelled";
 
 function whenLabel(start: Date, end: Date): string {
   return `${format(start, "EEE, d MMM · HH:mm")}–${format(end, "HH:mm")}`;
@@ -39,6 +41,14 @@ const SUBJECTS = {
   reset: {
     en: () => "Reset your Playtora password",
     ka: () => "Playtora — პაროლის აღდგენა",
+  },
+  managerNew: {
+    en: (venue: string) => `New booking at ${venue}`,
+    ka: (venue: string) => `${venue} — ახალი ჯავშანი`,
+  },
+  managerCancelled: {
+    en: (venue: string) => `Booking cancelled at ${venue}`,
+    ka: (venue: string) => `${venue} — ჯავშანი გაუქმდა`,
   },
 } as const;
 
@@ -143,6 +153,81 @@ export async function notifyBookingCancelled(bookingId: string): Promise<void> {
     });
   } catch (err) {
     console.error("notifyBookingCancelled failed:", err);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Manager — new booking notification. Sent to the venue owner when a
+// player books at their venue. Skipped if the owner IS the player
+// (self-bookings shouldn't spam the manager's own inbox).
+// ────────────────────────────────────────────────────────────────────────
+export async function notifyManagerNewBooking(bookingId: string): Promise<void> {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        user: true,
+        facility: { include: { venue: { include: { owner: true } } } },
+      },
+    });
+    if (!booking?.facility.venue.owner.email) return;
+    if (booking.userId === booking.facility.venue.ownerId) return; // self-booking
+
+    const locale = normalizeLocale(booking.facility.venue.owner.locale);
+    const managerUrl = absoluteUrl(`/manager/bookings`);
+
+    await sendEmail({
+      to: booking.facility.venue.owner.email,
+      subject: SUBJECTS.managerNew[locale](booking.facility.venue.name),
+      tag: "manager-new-booking",
+      react: ManagerNewBookingEmail({
+        locale,
+        playerName: booking.user.name,
+        playerPhone: booking.user.phone,
+        facilityName: `${booking.facility.venue.name} · ${booking.facility.name}`,
+        whenLabel: whenLabel(booking.startTime, booking.endTime),
+        totalLabel: formatGEL(booking.priceGEL),
+        notes: booking.notes,
+        managerUrl,
+      }),
+    });
+  } catch (err) {
+    console.error("notifyManagerNewBooking failed:", err);
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Manager — booking cancelled notification.
+// ────────────────────────────────────────────────────────────────────────
+export async function notifyManagerBookingCancelled(bookingId: string): Promise<void> {
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        user: true,
+        facility: { include: { venue: { include: { owner: true } } } },
+      },
+    });
+    if (!booking?.facility.venue.owner.email) return;
+    if (booking.userId === booking.facility.venue.ownerId) return;
+
+    const locale = normalizeLocale(booking.facility.venue.owner.locale);
+    const managerUrl = absoluteUrl(`/manager/bookings`);
+
+    await sendEmail({
+      to: booking.facility.venue.owner.email,
+      subject: SUBJECTS.managerCancelled[locale](booking.facility.venue.name),
+      tag: "manager-booking-cancelled",
+      react: ManagerBookingCancelledEmail({
+        locale,
+        playerName: booking.user.name,
+        facilityName: `${booking.facility.venue.name} · ${booking.facility.name}`,
+        whenLabel: whenLabel(booking.startTime, booking.endTime),
+        managerUrl,
+      }),
+    });
+  } catch (err) {
+    console.error("notifyManagerBookingCancelled failed:", err);
   }
 }
 

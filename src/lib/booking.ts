@@ -1,6 +1,11 @@
 import { prisma } from "./prisma";
 import type { SessionUser } from "./session";
-import { notifyBookingConfirmed, notifyBookingCancelled } from "./notify";
+import {
+  notifyBookingConfirmed,
+  notifyBookingCancelled,
+  notifyManagerNewBooking,
+  notifyManagerBookingCancelled,
+} from "./notify";
 
 export class BookingError extends Error {}
 
@@ -83,8 +88,10 @@ export async function createBooking(input: CreateBookingInput) {
       },
     });
 
-    // Fire-and-forget confirmation email. Side effect runs after tx commits.
+    // Fire-and-forget confirmation email to player + notification to manager.
+    // Side effects run after tx commits.
     void notifyBookingConfirmed(booking.id);
+    void notifyManagerNewBooking(booking.id);
 
     return booking;
   });
@@ -139,6 +146,7 @@ export async function createClassBooking(input: CreateClassBookingInput) {
     });
 
     void notifyBookingConfirmed(booking.id);
+    void notifyManagerNewBooking(booking.id);
 
     return booking;
   });
@@ -192,6 +200,7 @@ export async function createDropInPass(input: CreateDropInInput) {
     });
 
     void notifyBookingConfirmed(booking.id);
+    void notifyManagerNewBooking(booking.id);
 
     return booking;
   });
@@ -232,6 +241,7 @@ export async function cancelBooking(bookingId: string, actor: SessionUser) {
   });
 
   void notifyBookingCancelled(updated.id);
+  void notifyManagerBookingCancelled(updated.id);
 
   return updated;
 }

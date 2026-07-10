@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
-import { Building2, CalendarDays, TrendingUp, Banknote, ArrowRight } from "lucide-react";
+import { Building2, CalendarDays, TrendingUp, Banknote, ArrowRight, Activity, Clock, Trophy } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,7 +58,7 @@ export default async function ManagerOverviewPage() {
 
   const venues = await prisma.venue.findMany({
     where: user.role === "PLATFORM_ADMIN" ? {} : { ownerId: user.id },
-    include: { facilities: true },
+    include: { facilities: { include: { schedules: true } } },
     orderBy: { createdAt: "desc" },
   });
   const venueIds = venues.map((c) => c.id);
@@ -72,11 +72,15 @@ export default async function ManagerOverviewPage() {
   const sevenDaysAgo = new Date(todayStart);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
+  // 30-day analytics window
+  const thirtyDaysAgo = new Date(todayStart);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   // Upcoming 3 days for the schedule preview
   const threeDaysEnd = new Date(todayStart);
   threeDaysEnd.setDate(threeDaysEnd.getDate() + 3);
 
-  const [todaysBookings, weekBookingsRaw, upcomingBookings] = await Promise.all([
+  const [todaysBookings, weekBookingsRaw, upcomingBookings, monthBookingsRaw] = await Promise.all([
     prisma.booking.findMany({
       where: {
         facility: { venueId: { in: venueIds } },
@@ -103,6 +107,20 @@ export default async function ManagerOverviewPage() {
       include: { facility: { include: { venue: true } }, user: true },
       orderBy: { startTime: "asc" },
       take: 30,
+    }),
+    // 30-day window for occupancy + top slot + top facility.
+    prisma.booking.findMany({
+      where: {
+        facility: { venueId: { in: venueIds } },
+        status: { not: "CANCELLED" },
+        startTime: { gte: thirtyDaysAgo, lt: todayStart },
+      },
+      select: {
+        startTime: true,
+        endTime: true,
+        facilityId: true,
+        facility: { select: { name: true, bookingModel: true } },
+      },
     }),
   ]);
 
@@ -135,6 +153,59 @@ export default async function ManagerOverviewPage() {
     if (!upcomingByDay.has(key)) upcomingByDay.set(key, []);
     upcomingByDay.get(key)!.push(b);
   }
+
+  // ── 30-day analytics ────────────────────────────────────────────────────
+  const timeSlotBookings = monthBookingsRaw.filter((b) => b.facility.bookingModel === "TIME_SLOT");
+
+  // Occupancy: booked hours / available hours over the last 30 days.
+  // Available = sum over TIME_SLOT facilities of weekly slot minutes × (30 / 7).
+  let availableMinutes30d = 0;
+  for (const venue of venues) {
+    for (const facility of venue.facilities) {
+      if (facility.bookingModel !== "TIME_SLOT") continue;
+      const weekMinutes = facility.schedules.reduce(
+        (sum, s) => sum + (s.closeMinutes - s.openMinutes),
+        0,
+      );
+      availableMinutes30d += (weekMinutes * 30) / 7;
+    }
+  }
+  const bookedMinutes30d = timeSlotBookings.reduce(
+    (sum, b) => sum + (b.endTime.getTime() - b.startTime.getTime()) / 60_000,
+    0,
+  );
+  const occupancyPct =
+    availableMinutes30d > 0
+      ? Math.round((bookedMinutes30d / availableMinutes30d) * 100)
+      : 0;
+
+  // Top slot: day-of-week × hour combo with the most bookings.
+  const slotCounts = new Map<string, number>(); // key = `${day}_${hour}`
+  for (const b of timeSlotBookings) {
+    const key = `${b.startTime.getDay()}_${b.startTime.getHours()}`;
+    slotCounts.set(key, (slotCounts.get(key) ?? 0) + 1);
+  }
+  let topSlotLabel = "—";
+  let topSlotCount = 0;
+  if (slotCounts.size > 0) {
+    const [topKey, topCount] = Array.from(slotCounts.entries()).sort((a, b) => b[1] - a[1])[0];
+    const [dayStr, hourStr] = topKey.split("_");
+    const day = Number(dayStr);
+    const hour = Number(hourStr);
+    const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    topSlotLabel = `${weekdayNames[day]} ${String(hour).padStart(2, "0")}:00`;
+    topSlotCount = topCount;
+  }
+
+  // Top facility: most-booked facility over the last 30 days.
+  const facilityCounts = new Map<string, { name: string; count: number }>();
+  for (const b of monthBookingsRaw) {
+    const cur = facilityCounts.get(b.facilityId);
+    if (cur) cur.count++;
+    else facilityCounts.set(b.facilityId, { name: b.facility.name, count: 1 });
+  }
+  const topFacility =
+    Array.from(facilityCounts.values()).sort((a, b) => b.count - a.count)[0] ?? null;
 
   return (
     <DashboardShell title={t("title")} subtitle={t("desc")} nav={MANAGER_NAV} current="/manager">
@@ -183,6 +254,45 @@ export default async function ManagerOverviewPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* 30-day analytics */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-cobalt-600">
+          {tRoot("analytics.title")}
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard
+            label={tRoot("analytics.occupancy")}
+            value={`${occupancyPct}%`}
+            icon={<Activity className="h-4.5 w-4.5" />}
+          />
+          <StatCard
+            label={tRoot("analytics.topSlot")}
+            value={topSlotLabel}
+            icon={<Clock className="h-4.5 w-4.5" />}
+          />
+          <StatCard
+            label={tRoot("analytics.topFacility")}
+            value={topFacility?.name ?? "—"}
+            icon={<Trophy className="h-4.5 w-4.5" />}
+          />
+        </div>
+        <p className="mt-2 text-[11px] text-muted">
+          {tRoot("analytics.window")}
+          {topSlotCount > 0 && (
+            <>
+              {" "}
+              · {tRoot("analytics.topSlotHint", { count: topSlotCount })}
+            </>
+          )}
+          {topFacility && (
+            <>
+              {" "}
+              · {tRoot("analytics.topFacilityHint", { count: topFacility.count })}
+            </>
+          )}
+        </p>
+      </div>
 
       {/* Upcoming bookings */}
       <div className="mt-6 flex items-center justify-between">

@@ -125,6 +125,15 @@
     "dark": "Dark theme",
     "system": "System theme"
   },
+  "analytics": {
+    "title": "Last 30 days",
+    "occupancy": "Occupancy",
+    "topSlot": "Busiest slot",
+    "topFacility": "Top facility",
+    "window": "Based on the last 30 days of confirmed bookings.",
+    "topSlotHint": "{count} bookings at this time",
+    "topFacilityHint": "{count} bookings"
+  },
   "consent": {
     "title": "We use cookies",
     "body": "Playtora uses cookies to keep you signed in, remember your theme and language, and record your consent. We don't use tracking or advertising cookies.",
