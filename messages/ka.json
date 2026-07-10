@@ -110,7 +110,9 @@
     "list": "სია",
     "map": "რუკა",
     "noVenuesWithCoords": "ამ ობიექტებს ჯერ კოორდინატები არ აქვს.",
-    "viewVenue": "ნახე ობიექტი"
+    "viewVenue": "ნახე ობიექტი",
+    "usingHomeBase": "საწყისი მდებარეობა",
+    "usingHomeBaseHelp": "მანძილი შენი შენახული საწყისი მდებარეობიდან იზომება. „ჩემთან ახლოს“-ის დაჭერით — ცოცხალ მდებარეობაზე გადახვალ."
   },
   "notFound": {
     "title": "გვერდი ვერ მოიძებნა.",
@@ -515,7 +517,14 @@
     "currentPassword": "მიმდინარე პაროლი",
     "newPassword": "ახალი პაროლი",
     "confirmNewPassword": "გაიმეორე ახალი პაროლი",
-    "changePasswordBtn": "პაროლის შეცვლა"
+    "changePasswordBtn": "პაროლის შეცვლა",
+    "homeBase": "საწყისი მდებარეობა",
+    "homeBaseDesc": "ობიექტების ჩამონათვალის გახსნისას რუკას აქ დავცენტრავთ.",
+    "homeAddressPlaceholder": "უბანი, ქუჩა ან ორიენტირი",
+    "useCurrentLocation": "მიმდინარე მდებარეობა",
+    "locating": "ვადგენ…",
+    "clearLocation": "გასუფთავება",
+    "locationDenied": "მდებარეობა ვერ დადგინდა"
   },
   "auth": {
     "welcomeBack": "კეთილი იყოს დაბრუნება",

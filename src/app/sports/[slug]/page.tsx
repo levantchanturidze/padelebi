@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { VenuesView } from "@/components/map/VenuesView";
 import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserHomeBase } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { tSportName } from "@/lib/sports";
 import { canonical, sportOgImage, ogLocale } from "@/lib/seo";
@@ -64,20 +65,23 @@ export default async function SportDetailPage({
   const sport = await prisma.sport.findUnique({ where: { slug } });
   if (!sport) notFound();
 
-  const venues = await prisma.venue.findMany({
-    where: {
-      status: "APPROVED",
-      ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
-      facilities: { some: { sportId: sport.id, isActive: true } },
-    },
-    include: {
-      facilities: {
-        where: { sportId: sport.id, isActive: true },
-        include: { sport: true },
+  const [venues, homeBase] = await Promise.all([
+    prisma.venue.findMany({
+      where: {
+        status: "APPROVED",
+        ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+        facilities: { some: { sportId: sport.id, isActive: true } },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      include: {
+        facilities: {
+          where: { sportId: sport.id, isActive: true },
+          include: { sport: true },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
+    getCurrentUserHomeBase(),
+  ]);
 
   const sportName = tSportName(t, sport.slug);
   const venueCountLabel =
@@ -171,7 +175,7 @@ export default async function SportDetailPage({
         </Card>
       ) : (
         <div className="mt-8">
-          <VenuesView venues={mapVenues} />
+          <VenuesView venues={mapVenues} homeBase={homeBase} />
         </div>
       )}
     </Container>

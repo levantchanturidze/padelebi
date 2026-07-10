@@ -110,7 +110,9 @@
     "list": "List",
     "map": "Map",
     "noVenuesWithCoords": "These venues don't have coordinates yet.",
-    "viewVenue": "View venue"
+    "viewVenue": "View venue",
+    "usingHomeBase": "Home base",
+    "usingHomeBaseHelp": "Distances are measured from your saved home base. Tap “Near me” to switch to live location."
   },
   "notFound": {
     "title": "This page got lost.",
@@ -514,7 +516,14 @@
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmNewPassword": "Confirm new password",
-    "changePasswordBtn": "Change password"
+    "changePasswordBtn": "Change password",
+    "homeBase": "Home base",
+    "homeBaseDesc": "We'll centre the map on this spot when you open venue listings.",
+    "homeAddressPlaceholder": "Neighbourhood, street or landmark",
+    "useCurrentLocation": "Use current location",
+    "locating": "Locating…",
+    "clearLocation": "Clear",
+    "locationDenied": "Location unavailable"
   },
   "auth": {
     "welcomeBack": "Welcome back",

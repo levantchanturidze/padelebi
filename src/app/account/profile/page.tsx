@@ -26,6 +26,9 @@ export default async function ProfilePage() {
               name: user?.name ?? "",
               phone: user?.phone ?? "",
               skillLevel: user?.skillLevel ?? "",
+              homeAddress: user?.homeAddress ?? "",
+              homeLat: user?.homeLat != null ? String(user.homeLat) : "",
+              homeLng: user?.homeLng != null ? String(user.homeLng) : "",
             }}
           />
         </CardContent>

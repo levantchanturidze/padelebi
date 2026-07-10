@@ -34,14 +34,17 @@ export function VenuesView({
   initialCenter,
   initialZoom,
   emptyMessage,
+  homeBase,
 }: {
   venues: MapVenue[];
   initialCenter?: [number, number];
   initialZoom?: number;
   emptyMessage?: string;
+  /** Signed-in user's saved home base — used as position fallback. */
+  homeBase?: { lat: number; lng: number } | null;
 }) {
   return (
-    <PositionProvider>
+    <PositionProvider initialHome={homeBase}>
       <MapSyncProvider>
         <VenuesViewInner
           venues={venues}
@@ -68,7 +71,7 @@ function VenuesViewInner({
   const t = useTranslations("map");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
-  const { position } = usePosition();
+  const { position, source } = usePosition();
 
   const displayVenues = useMemo(() => {
     if (!position) return venues.map((v) => ({ ...v, distanceKm: undefined as number | undefined }));
@@ -90,6 +93,15 @@ function VenuesViewInner({
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <NearMeButton />
         <RadiusFilter value={radiusKm} onChange={setRadiusKm} />
+        {source === "home" && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-brand-500 bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-foreground"
+            title={t("usingHomeBaseHelp")}
+          >
+            <MapPin className="h-3 w-3 text-brand-700" />
+            {t("usingHomeBase")}
+          </span>
+        )}
       </div>
 
       {/* Mobile toggle */}

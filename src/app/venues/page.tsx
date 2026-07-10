@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { VenuesView } from "@/components/map/VenuesView";
 import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserHomeBase } from "@/lib/session";
 import { parseJSON, formatGEL } from "@/lib/utils";
 import { normalizeCity, cityCentroid } from "@/lib/city-map";
 import { AMENITIES, SURFACE_CATEGORIES } from "@/lib/enums";
@@ -101,7 +102,7 @@ export default async function VenuesPage({
   const surfaceQuery =
     surface && (SURFACE_CATEGORIES as readonly string[]).includes(surface) ? surface : undefined;
 
-  const [venues, sports, knownDistricts] = await Promise.all([
+  const [venues, sports, knownDistricts, homeBase] = await Promise.all([
     prisma.venue.findMany({
       where: {
         status: "APPROVED",
@@ -141,6 +142,7 @@ export default async function VenuesPage({
         take: 100,
       })
       .then((rows) => rows.map((r) => r.district).filter((d): d is string => !!d)),
+    getCurrentUserHomeBase(),
   ]);
 
   const filtered = venues.filter((venue) => {
@@ -334,6 +336,7 @@ export default async function VenuesPage({
               venues={mapVenues}
               initialCenter={centroid ?? undefined}
               initialZoom={centroid ? 12 : undefined}
+              homeBase={homeBase}
             />
           </div>
         );

@@ -42,6 +42,12 @@ model User {
   skillLevel   String? // BEGINNER | INTERMEDIATE | ADVANCED | PRO
   /// Preferred locale for transactional emails (ka | en).
   locale       String   @default("ka")
+  /// Optional saved "home base" — used as a fallback position on venue
+  /// listings when the user hasn't granted the browser's live geolocation.
+  /// homeLat and homeLng are only meaningful together.
+  homeAddress  String?
+  homeLat      Float?
+  homeLng      Float?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
