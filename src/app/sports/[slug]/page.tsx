@@ -8,7 +8,7 @@ import { VenuesView } from "@/components/map/VenuesView";
 import type { MapVenue } from "@/components/map/types";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserHomeBase } from "@/lib/session";
-import { parseJSON, formatGEL } from "@/lib/utils";
+import { parseJSON, formatGEL, serializeJsonLd } from "@/lib/utils";
 import { tSportName } from "@/lib/sports";
 import { canonical, sportOgImage, ogLocale } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -140,7 +140,7 @@ export default async function SportDetailPage({
     <Container className="py-8 sm:py-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <Link
         href="/sports"

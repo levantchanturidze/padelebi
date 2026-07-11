@@ -355,13 +355,18 @@ export async function rescheduleBooking({
 }) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { facility: true },
+    include: { facility: { include: { venue: true } } },
   });
 
   if (!booking) throw new BookingError("Booking not found.");
   if (booking.userId !== userId) throw new BookingError("Not your booking.");
   if (booking.status === "CANCELLED") throw new BookingError("Cannot reschedule a cancelled booking.");
   if (booking.endTime < new Date()) throw new BookingError("Cannot reschedule a past booking.");
+  // Re-check availability of the target facility/venue, consistent with createBooking.
+  if (!booking.facility.isActive) throw new BookingError("Facility is not available.");
+  if (booking.facility.venue.status !== "APPROVED") {
+    throw new BookingError("This venue is not accepting bookings.");
+  }
 
   const cutoff = booking.startTime.getTime() - PLAYER_CANCELLATION_WINDOW_MS;
   if (Date.now() > cutoff) {

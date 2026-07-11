@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { getOwnedVenue, uniqueVenueSlug } from "@/lib/venue-access";
 import { AMENITIES, SURFACE_CATEGORIES } from "@/lib/enums";
-import { timeToMinutes } from "@/lib/utils";
+import { timeToMinutes, parseJSON, sanitizePhotoUrls } from "@/lib/utils";
 import { getAdapter } from "@/lib/sports";
 
 const MANAGER_ROLES = ["CLUB_ADMIN", "PLATFORM_ADMIN"] as const;
@@ -79,7 +79,7 @@ export async function updateVenuePhotosAction(formData: FormData) {
   const venueId = String(formData.get("venueId"));
   if (!(await getOwnedVenue(venueId, user))) redirect("/manager");
 
-  const photos = JSON.parse(String(formData.get("photos") ?? "[]")) as string[];
+  const photos = sanitizePhotoUrls(parseJSON<unknown[]>(String(formData.get("photos") ?? "[]"), []));
   await prisma.venue.update({ where: { id: venueId }, data: { photos: JSON.stringify(photos) } });
   revalidatePath(`/manager/${venueId}`);
 }
@@ -90,7 +90,7 @@ export async function updateFacilityPhotosAction(formData: FormData) {
   const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
   if (!facility || !(await getOwnedVenue(facility.venueId, user))) redirect("/manager");
 
-  const photos = JSON.parse(String(formData.get("photos") ?? "[]")) as string[];
+  const photos = sanitizePhotoUrls(parseJSON<unknown[]>(String(formData.get("photos") ?? "[]"), []));
   await prisma.facility.update({ where: { id: facilityId }, data: { photos: JSON.stringify(photos) } });
   revalidatePath(`/manager/${facility.venueId}`);
 }

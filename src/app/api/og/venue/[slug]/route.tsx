@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
-import { parseJSON } from "@/lib/utils";
+import { parseJSON, sanitizePhotoUrls } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,9 @@ export async function GET(
     return new ImageResponse(<DefaultCard title="Venue not found" />, SIZE);
   }
 
-  const photos = parseJSON<string[]>(venue.photos, []);
+  // Sanitize at read too: guards against any pre-existing rows with untrusted
+  // URLs being fetched server-side (SSRF) during image generation.
+  const photos = sanitizePhotoUrls(parseJSON<unknown[]>(venue.photos, []));
   const heroPhoto = photos[0];
   const sports = Array.from(
     new Map(venue.facilities.map((f) => [f.sport.id, f.sport.name])).values(),

@@ -1,6 +1,15 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notifyBookingReminder } from "@/lib/notify";
+
+/** Constant-time string comparison to avoid leaking the secret via timing. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,8 +31,8 @@ export async function GET(request: Request) {
       return new NextResponse("forbidden", { status: 403 });
     }
   } else {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
+    const auth = request.headers.get("authorization") ?? "";
+    if (!safeEqual(auth, `Bearer ${secret}`)) {
       return new NextResponse("forbidden", { status: 403 });
     }
   }

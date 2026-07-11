@@ -36,3 +36,43 @@ export function parseJSON<T>(value: string | null | undefined, fallback: T): T {
     return fallback;
   }
 }
+
+/**
+ * Serialize an object for embedding in an inline <script type="application/ld+json">.
+ * `JSON.stringify` does not escape `<`, `>` or `&`, so DB-sourced values (venue
+ * name, description, address) could otherwise break out of the script tag and
+ * execute — a stored XSS. Escaping these (plus the JS line separators U+2028 /
+ * U+2029) to their unicode forms keeps the JSON valid while making tag-breakout
+ * impossible.
+ */
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+/**
+ * Keep only strings that are absolute HTTPS URLs whose host is an allowed
+ * image origin (Vercel Blob). Used to sanitize manager-supplied photo arrays
+ * so arbitrary/attacker URLs can't be stored and later fetched server-side
+ * (SSRF via OG image generation) or rendered.
+ */
+export function sanitizePhotoUrls(urls: unknown): string[] {
+  if (!Array.isArray(urls)) return [];
+  const out: string[] = [];
+  for (const raw of urls) {
+    if (typeof raw !== "string") continue;
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== "https:") continue;
+      if (!/(^|\.)vercel-storage\.com$/.test(u.hostname)) continue;
+      out.push(u.toString());
+    } catch {
+      // not a valid absolute URL — drop it
+    }
+  }
+  return out;
+}

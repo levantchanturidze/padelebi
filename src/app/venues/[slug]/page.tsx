@@ -17,7 +17,7 @@ import { ReviewForm } from "@/components/reviews/review-form";
 import { prisma } from "@/lib/prisma";
 import { getFacilityAvailability } from "@/lib/availability";
 import { getCurrentUser } from "@/lib/session";
-import { parseJSON, formatGEL } from "@/lib/utils";
+import { parseJSON, formatGEL, serializeJsonLd } from "@/lib/utils";
 import { AMENITY_LABELS, type Amenity } from "@/lib/enums";
 import { getAdapter, parseAttributes, tSportName, tSummaryValue } from "@/lib/sports";
 import { canonical, venueOgImage, ogLocale } from "@/lib/seo";
@@ -230,8 +230,9 @@ export default async function VenueDetailPage({
     <>
       <script
         type="application/ld+json"
-        // schema.org JSON-LD; safe — values come from our own DB.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // serializeJsonLd escapes <, >, & so DB-sourced values can't break out
+        // of the script tag (stored XSS).
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <PhotoGallery photos={photos} />
       <Container className="py-6 sm:py-8">
