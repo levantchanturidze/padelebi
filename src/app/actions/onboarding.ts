@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { uniqueVenueSlug } from "@/lib/venue-access";
 import { getAdapter } from "@/lib/sports";
+import { geocodeVenue } from "@/lib/geocode";
 
 const MANAGER_ROLES = ["CLUB_ADMIN", "PLATFORM_ADMIN"] as const;
 
@@ -36,9 +37,13 @@ export async function createOnboardingVenueAction(formData: FormData) {
     description: formData.get("description") ?? "",
   });
 
+  const coords = await geocodeVenue(parsed);
+
   await prisma.venue.create({
     data: {
       ...parsed,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
       slug: await uniqueVenueSlug(parsed.name),
       status: "PENDING",
       ownerId: user.id,

@@ -9,6 +9,7 @@ import { getOwnedVenue, uniqueVenueSlug } from "@/lib/venue-access";
 import { AMENITIES, SURFACE_CATEGORIES } from "@/lib/enums";
 import { timeToMinutes, parseJSON, sanitizePhotoUrls } from "@/lib/utils";
 import { getAdapter } from "@/lib/sports";
+import { geocodeVenue } from "@/lib/geocode";
 
 const MANAGER_ROLES = ["CLUB_ADMIN", "PLATFORM_ADMIN"] as const;
 
@@ -36,10 +37,13 @@ export async function createVenueAction(formData: FormData) {
     district: formData.get("district") ?? undefined,
   });
   const amenities = AMENITIES.filter((a) => formData.get(`amenity_${a}`) === "on");
+  const coords = await geocodeVenue(parsed);
 
   const venue = await prisma.venue.create({
     data: {
       ...parsed,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
       amenities: JSON.stringify(amenities),
       slug: await uniqueVenueSlug(parsed.name),
       status: "PENDING", // platform admin must approve
@@ -63,10 +67,17 @@ export async function updateVenueAction(formData: FormData) {
     district: formData.get("district") ?? undefined,
   });
   const amenities = AMENITIES.filter((a) => formData.get(`amenity_${a}`) === "on");
+  // Re-geocode on save. Only overwrite coordinates when the lookup succeeds so
+  // a transient geocoder failure never wipes previously good coordinates.
+  const coords = await geocodeVenue(parsed);
 
   await prisma.venue.update({
     where: { id: venueId },
-    data: { ...parsed, amenities: JSON.stringify(amenities) },
+    data: {
+      ...parsed,
+      amenities: JSON.stringify(amenities),
+      ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+    },
   });
   revalidatePath(`/manager/${venueId}`);
   redirect(`/manager/${venueId}?saved=1&tab=profile`);

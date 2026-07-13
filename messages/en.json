@@ -601,7 +601,11 @@
     "findACourt": "Find a venue",
     "pastCancelled": "Past & cancelled",
     "cancel": "Cancel",
-    "reschedule": "Reschedule"
+    "reschedule": "Reschedule",
+    "players": "{count} players",
+    "saved": "saved {amount}",
+    "notesLabel": "Note",
+    "ref": "Ref"
   },
   "profile": {
     "title": "Profile",
