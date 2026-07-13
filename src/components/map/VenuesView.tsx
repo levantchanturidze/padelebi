@@ -12,8 +12,13 @@ import { MapSyncProvider, useMapSync } from "./sync-context";
 import { PositionProvider, usePosition } from "./use-position";
 import { NearMeButton } from "./NearMeButton";
 import { RadiusFilter } from "./RadiusFilter";
-import type { MapVenue } from "./types";
+import type { MapVenue, MapVenueWithCoords } from "./types";
 import { distanceKm, formatDistance } from "@/lib/geo";
+
+/** True when a venue carries usable coordinates (narrows the type for the map). */
+function hasCoords(v: MapVenue): v is MapVenueWithCoords {
+  return typeof v.lat === "number" && typeof v.lng === "number";
+}
 
 const VenueMap = dynamic(() => import("./VenueMap").then((m) => m.VenueMap), {
   ssr: false,
@@ -75,15 +80,20 @@ function VenuesViewInner({
 
   const displayVenues = useMemo(() => {
     if (!position) return venues.map((v) => ({ ...v, distanceKm: undefined as number | undefined }));
+    // Distance is only meaningful for geocoded venues; coordless ones sort last
+    // and are never removed by the radius filter (we can't measure them).
     const annotated = venues
-      .map((v) => ({ ...v, distanceKm: distanceKm(position, v) }))
-      .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+      .map((v) => ({ ...v, distanceKm: hasCoords(v) ? distanceKm(position, v) : undefined }))
+      .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
     if (radiusKm === null) return annotated;
-    return annotated.filter((v) => (v.distanceKm ?? 0) <= radiusKm);
+    return annotated.filter((v) => v.distanceKm === undefined || v.distanceKm <= radiusKm);
   }, [venues, position, radiusKm]);
 
-  const mapVenuesForMap = useMemo(
-    () => displayVenues.map(({ distanceKm: _d, ...rest }) => rest),
+  const mapVenuesForMap = useMemo<MapVenueWithCoords[]>(
+    () =>
+      displayVenues
+        .map(({ distanceKm: _d, ...rest }) => rest)
+        .filter(hasCoords),
     [displayVenues],
   );
 

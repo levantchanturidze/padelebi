@@ -92,9 +92,6 @@ export default async function SportDetailPage({
         : t("sportsPage.venuesMany", { count: venues.length });
 
   const mapVenues: MapVenue[] = venues
-    .filter((v): v is typeof v & { lat: number; lng: number } =>
-      typeof v.lat === "number" && typeof v.lng === "number",
-    )
     .map((v) => {
       const minPrice = v.facilities.length
         ? Math.min(...v.facilities.map((c) => c.pricePerHourGEL))
@@ -106,8 +103,8 @@ export default async function SportDetailPage({
         slug: v.slug,
         name: v.name,
         city: v.city,
-        lat: v.lat,
-        lng: v.lng,
+        lat: typeof v.lat === "number" ? v.lat : null,
+        lng: typeof v.lng === "number" ? v.lng : null,
         minPriceGEL: minPrice,
         sports: [{ id: sport.id, slug: sport.slug, name: sportName }],
         primarySportSlug: sport.slug,

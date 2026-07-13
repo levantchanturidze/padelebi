@@ -10,8 +10,9 @@ export type MapVenue = {
   slug: string;
   name: string;
   city: string;
-  lat: number;
-  lng: number;
+  /** Null when the venue has no geocoded location — shown in the list but not on the map. */
+  lat: number | null;
+  lng: number | null;
   minPriceGEL: number | null;
   /** Translated sport names + slugs, pre-resolved server-side. */
   sports: { id: string; slug: string; name: string }[];
@@ -26,3 +27,6 @@ export type MapVenue = {
   /** Pre-formatted price label, e.g. "from ₾60/hr". null if no facilities. */
   minPriceLabel: string | null;
 };
+
+/** A MapVenue guaranteed to carry coordinates — the shape the map layer needs. */
+export type MapVenueWithCoords = MapVenue & { lat: number; lng: number };

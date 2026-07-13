@@ -297,9 +297,6 @@ export default async function VenuesPage({
       ) : (() => {
         const centroid = cityCentroid(city);
         const mapVenues: MapVenue[] = filtered
-          .filter((v): v is typeof v & { lat: number; lng: number } =>
-            typeof v.lat === "number" && typeof v.lng === "number",
-          )
           .map((v) => {
             const sportTags = Array.from(
               new Map(v.facilities.map((f) => [f.sport.id, f.sport])).values(),
@@ -313,8 +310,8 @@ export default async function VenuesPage({
               slug: v.slug,
               name: v.name,
               city: v.city,
-              lat: v.lat,
-              lng: v.lng,
+              lat: typeof v.lat === "number" ? v.lat : null,
+              lng: typeof v.lng === "number" ? v.lng : null,
               minPriceGEL: minPrice,
               sports: sportTags.map((s) => ({
                 id: s.id,

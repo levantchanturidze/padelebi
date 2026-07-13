@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useMapSync } from "./sync-context";
 import { usePosition } from "./use-position";
-import type { MapVenue } from "./types";
+import type { MapVenueWithCoords } from "./types";
 import { GEORGIA_CENTER, GEORGIA_DEFAULT_ZOOM } from "@/lib/city-map";
 import { formatGEL } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ export function VenueMap({
   initialCenter,
   initialZoom,
 }: {
-  venues: MapVenue[];
+  venues: MapVenueWithCoords[];
   initialCenter?: [number, number];
   initialZoom?: number;
 }) {
